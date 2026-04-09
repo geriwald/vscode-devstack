@@ -1,0 +1,96 @@
+{
+  "name": "devstack",
+  "displayName": "DevStack",
+  "description": "Auto-detect your project's tech stack and launch services from the activity bar",
+  "version": "0.1.0",
+  "publisher": "geriwald",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "devstack",
+          "title": "DevStack",
+          "icon": "resources/devstack.svg"
+        }
+      ]
+    },
+    "views": {
+      "devstack": [
+        {
+          "id": "devstackServices",
+          "name": "Services"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "devstack.startService",
+        "title": "Start Service",
+        "icon": "$(play)"
+      },
+      {
+        "command": "devstack.stopService",
+        "title": "Stop Service",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "devstack.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "devstack.editConfig",
+        "title": "Edit DevStack Config",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "devstack.refresh",
+          "when": "view == devstackServices",
+          "group": "navigation"
+        },
+        {
+          "command": "devstack.editConfig",
+          "when": "view == devstackServices",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "devstack.startService",
+          "when": "view == devstackServices && viewItem == service-stopped",
+          "group": "inline"
+        },
+        {
+          "command": "devstack.stopService",
+          "when": "view == devstackServices && viewItem == service-running",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

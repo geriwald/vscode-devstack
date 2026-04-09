@@ -1,0 +1,351 @@
+import * as fs from "fs";
+import * as path from "path";
+import { DetectedStack, ServiceDefinition } from "./types";
+
+/**
+ * Detect the tech stack of a project by examining marker files.
+ * Returns all detected stacks with their launchable services.
+ */
+export function detectStacks(workspaceRoot: string): DetectedStack[] {
+  const stacks: DetectedStack[] = [];
+
+  for (const detector of DETECTORS) {
+    const result = detector(workspaceRoot);
+    if (result) {
+      stacks.push(result);
+    }
+  }
+
+  return stacks;
+}
+
+type Detector = (root: string) => DetectedStack | null;
+
+function fileExists(root: string, ...segments: string[]): boolean {
+  return fs.existsSync(path.join(root, ...segments));
+}
+
+function readJsonSafe(filepath: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(fs.readFileSync(filepath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+// --- Detectors ---
+
+const detectNextJs: Detector = (root) => {
+  if (!fileExists(root, "next.config.js") && !fileExists(root, "next.config.mjs") && !fileExists(root, "next.config.ts")) {
+    return null;
+  }
+  return {
+    tech: "Next.js",
+    services: [
+      { name: "Next.js Dev", role: "fullstack", command: "npm run dev", source: "auto" },
+    ],
+  };
+};
+
+const detectVite: Detector = (root) => {
+  if (!fileExists(root, "vite.config.ts") && !fileExists(root, "vite.config.js") && !fileExists(root, "vite.config.mjs")) {
+    return null;
+  }
+  // Skip if Next.js already detected (some projects have both)
+  if (fileExists(root, "next.config.js") || fileExists(root, "next.config.mjs") || fileExists(root, "next.config.ts")) {
+    return null;
+  }
+  return {
+    tech: "Vite",
+    services: [
+      { name: "Vite Dev", role: "frontend", command: "npm run dev", source: "auto" },
+    ],
+  };
+};
+
+const detectAstro: Detector = (root) => {
+  if (!fileExists(root, "astro.config.mjs") && !fileExists(root, "astro.config.ts")) {
+    return null;
+  }
+  return {
+    tech: "Astro",
+    services: [
+      { name: "Astro Dev", role: "frontend", command: "npm run dev", source: "auto" },
+    ],
+  };
+};
+
+const detectNuxt: Detector = (root) => {
+  if (!fileExists(root, "nuxt.config.ts") && !fileExists(root, "nuxt.config.js")) {
+    return null;
+  }
+  return {
+    tech: "Nuxt",
+    services: [
+      { name: "Nuxt Dev", role: "fullstack", command: "npm run dev", source: "auto" },
+    ],
+  };
+};
+
+const detectRemix: Detector = (root) => {
+  const pkg = readJsonSafe(path.join(root, "package.json"));
+  if (!pkg) { return null; }
+  const deps = { ...(pkg.dependencies as Record<string, string> || {}), ...(pkg.devDependencies as Record<string, string> || {}) };
+  if (!deps["@remix-run/node"] && !deps["@remix-run/react"]) { return null; }
+  return {
+    tech: "Remix",
+    services: [
+      { name: "Remix Dev", role: "fullstack", command: "npm run dev", source: "auto" },
+    ],
+  };
+};
+
+const detectAngular: Detector = (root) => {
+  if (!fileExists(root, "angular.json")) { return null; }
+  return {
+    tech: "Angular",
+    services: [
+      { name: "Angular Dev", role: "frontend", command: "ng serve", source: "auto" },
+    ],
+  };
+};
+
+const detectGo: Detector = (root) => {
+  if (!fileExists(root, "go.mod")) { return null; }
+  // Check for common web framework imports
+  const goMod = fs.readFileSync(path.join(root, "go.mod"), "utf-8");
+  const isWeb = /gin-gonic|echo|fiber|chi|gorilla\/mux|net\/http/.test(goMod);
+  const command = fileExists(root, "Makefile") ? "make run" : "go run .";
+  return {
+    tech: "Go",
+    services: [
+      { name: "Go Server", role: isWeb ? "backend" : "other", command, source: "auto" },
+    ],
+  };
+};
+
+const detectPythonFastAPI: Detector = (root) => {
+  const reqFile = path.join(root, "requirements.txt");
+  const pyproject = path.join(root, "pyproject.toml");
+  let hasFastAPI = false;
+  let hasDjango = false;
+  let hasFlask = false;
+
+  for (const f of [reqFile, pyproject]) {
+    if (fs.existsSync(f)) {
+      const content = fs.readFileSync(f, "utf-8");
+      if (/fastapi/i.test(content)) { hasFastAPI = true; }
+      if (/django/i.test(content)) { hasDjango = true; }
+      if (/flask/i.test(content)) { hasFlask = true; }
+    }
+  }
+
+  if (hasFastAPI) {
+    const cmd = fileExists(root, "Makefile") ? "make run" : "uvicorn main:app --reload";
+    return {
+      tech: "FastAPI",
+      services: [
+        { name: "FastAPI Server", role: "backend", command: cmd, source: "auto" },
+      ],
+    };
+  }
+  if (hasDjango) {
+    return {
+      tech: "Django",
+      services: [
+        { name: "Django Server", role: "backend", command: "python manage.py runserver", source: "auto" },
+      ],
+    };
+  }
+  if (hasFlask) {
+    return {
+      tech: "Flask",
+      services: [
+        { name: "Flask Server", role: "backend", command: "flask run --reload", source: "auto" },
+      ],
+    };
+  }
+  return null;
+};
+
+const detectRust: Detector = (root) => {
+  if (!fileExists(root, "Cargo.toml")) { return null; }
+  const cargo = fs.readFileSync(path.join(root, "Cargo.toml"), "utf-8");
+  const isWeb = /actix|axum|rocket|warp|tide/.test(cargo);
+  return {
+    tech: "Rust",
+    services: [
+      { name: "Rust Server", role: isWeb ? "backend" : "other", command: "cargo run", source: "auto" },
+    ],
+  };
+};
+
+const detectDockerCompose: Detector = (root) => {
+  const composeFiles = ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"];
+  const found = composeFiles.find((f) => fileExists(root, f));
+  if (!found) { return null; }
+
+  const services: ServiceDefinition[] = [];
+
+  // Parse compose file to extract service names
+  try {
+    const content = fs.readFileSync(path.join(root, found), "utf-8");
+    const serviceNames = extractComposeServiceNames(content);
+    if (serviceNames.length > 0) {
+      // Add a "start all" service
+      services.push({
+        name: "Docker Compose (all)",
+        role: "infra",
+        command: `docker compose -f ${found} up`,
+        source: "auto",
+      });
+      // Add individual services
+      for (const svc of serviceNames) {
+        const role = guessRoleFromName(svc);
+        services.push({
+          name: `Docker: ${svc}`,
+          role,
+          command: `docker compose -f ${found} up ${svc}`,
+          source: "auto",
+        });
+      }
+    }
+  } catch {
+    services.push({
+      name: "Docker Compose",
+      role: "infra",
+      command: `docker compose -f ${found} up`,
+      source: "auto",
+    });
+  }
+
+  return { tech: "Docker Compose", services };
+};
+
+const detectMakefile: Detector = (root) => {
+  if (!fileExists(root, "Makefile")) { return null; }
+  const content = fs.readFileSync(path.join(root, "Makefile"), "utf-8");
+  const services: ServiceDefinition[] = [];
+
+  // Look for common dev targets
+  const devTargets = ["dev", "serve", "start", "run", "watch"];
+  for (const target of devTargets) {
+    const regex = new RegExp(`^${target}\\s*:`, "m");
+    if (regex.test(content)) {
+      services.push({
+        name: `make ${target}`,
+        role: "other",
+        command: `make ${target}`,
+        source: "auto",
+      });
+    }
+  }
+
+  if (services.length === 0) { return null; }
+  return { tech: "Makefile", services };
+};
+
+const detectNpmScripts: Detector = (root) => {
+  const pkg = readJsonSafe(path.join(root, "package.json"));
+  if (!pkg || !pkg.scripts) { return null; }
+  const scripts = pkg.scripts as Record<string, string>;
+
+  // Only add scripts not already covered by framework detectors
+  const services: ServiceDefinition[] = [];
+  const interestingScripts = ["dev", "start", "serve", "build:watch", "storybook"];
+
+  for (const name of interestingScripts) {
+    if (scripts[name]) {
+      services.push({
+        name: `npm run ${name}`,
+        role: guessRoleFromNpmScript(name, scripts[name]),
+        command: `npm run ${name}`,
+        source: "auto",
+      });
+    }
+  }
+
+  if (services.length === 0) { return null; }
+  return { tech: "npm scripts", services };
+};
+
+// --- Helpers ---
+
+function extractComposeServiceNames(yamlContent: string): string[] {
+  // Simple YAML parsing: find top-level "services:" then indented keys
+  const lines = yamlContent.split("\n");
+  const names: string[] = [];
+  let inServices = false;
+
+  for (const line of lines) {
+    if (/^services\s*:/.test(line)) {
+      inServices = true;
+      continue;
+    }
+    if (inServices) {
+      // Top-level key under services (2-space indent)
+      const match = line.match(/^  (\w[\w-]*)\s*:/);
+      if (match) {
+        names.push(match[1]);
+      } else if (/^\S/.test(line) && line.trim() !== "") {
+        // New top-level key, stop
+        break;
+      }
+    }
+  }
+  return names;
+}
+
+function guessRoleFromName(name: string): ServiceDefinition["role"] {
+  const n = name.toLowerCase();
+  if (/front|ui|web|client|app/.test(n)) { return "frontend"; }
+  if (/back|api|server|gateway/.test(n)) { return "backend"; }
+  if (/db|database|postgres|mysql|mongo|redis|mariadb/.test(n)) { return "database"; }
+  if (/proxy|traefik|nginx|caddy|queue|worker|mail/.test(n)) { return "infra"; }
+  return "other";
+}
+
+function guessRoleFromNpmScript(name: string, _command: string): ServiceDefinition["role"] {
+  if (name === "storybook") { return "frontend"; }
+  if (name === "dev" || name === "start" || name === "serve") { return "fullstack"; }
+  return "other";
+}
+
+/** Deduplicate services by command, preferring framework-detected over generic */
+export function deduplicateServices(stacks: DetectedStack[]): ServiceDefinition[] {
+  const seen = new Map<string, ServiceDefinition>();
+
+  // Framework-specific stacks first, then generic (npm scripts, Makefile)
+  const genericTechs = new Set(["npm scripts", "Makefile"]);
+  const sorted = [...stacks].sort((a, b) => {
+    const aGeneric = genericTechs.has(a.tech) ? 1 : 0;
+    const bGeneric = genericTechs.has(b.tech) ? 1 : 0;
+    return aGeneric - bGeneric;
+  });
+
+  for (const stack of sorted) {
+    for (const svc of stack.services) {
+      if (!seen.has(svc.command)) {
+        seen.set(svc.command, svc);
+      }
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+// Order matters: framework-specific detectors first, generic last
+const DETECTORS: Detector[] = [
+  detectNextJs,
+  detectNuxt,
+  detectRemix,
+  detectAstro,
+  detectVite,
+  detectAngular,
+  detectGo,
+  detectPythonFastAPI,
+  detectRust,
+  detectDockerCompose,
+  detectMakefile,
+  detectNpmScripts,
+];
