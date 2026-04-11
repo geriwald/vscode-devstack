@@ -112,14 +112,11 @@ const detectAngular: Detector = (root) => {
 
 const detectGo: Detector = (root) => {
   if (!fileExists(root, "go.mod")) { return null; }
-  // Check for common web framework imports
-  const goMod = fs.readFileSync(path.join(root, "go.mod"), "utf-8");
-  const isWeb = /gin-gonic|echo|fiber|chi|gorilla\/mux|net\/http/.test(goMod);
   const command = fileExists(root, "Makefile") ? "make run" : "go run .";
   return {
     tech: "Go",
     services: [
-      { name: "Go Server", role: isWeb ? "backend" : "other", command, source: "auto" },
+      { name: "Go Server", role: "backend", command, source: "auto" },
     ],
   };
 };
@@ -250,12 +247,20 @@ const detectNpmScripts: Detector = (root) => {
   if (!pkg || !pkg.scripts) { return null; }
   const scripts = pkg.scripts as Record<string, string>;
 
-  // Only add scripts not already covered by framework detectors
+  // If a framework is detected, skip "start" and "dev" (redundant with framework detector)
+  const hasFramework =
+    fileExists(root, "next.config.js") || fileExists(root, "next.config.mjs") || fileExists(root, "next.config.ts") ||
+    fileExists(root, "nuxt.config.ts") || fileExists(root, "nuxt.config.js") ||
+    fileExists(root, "vite.config.ts") || fileExists(root, "vite.config.js") || fileExists(root, "vite.config.mjs") ||
+    fileExists(root, "astro.config.mjs") || fileExists(root, "astro.config.ts") ||
+    fileExists(root, "angular.json");
+
   const services: ServiceDefinition[] = [];
   const interestingScripts = ["dev", "start", "serve", "build:watch", "storybook"];
 
   for (const name of interestingScripts) {
     if (scripts[name]) {
+      if (hasFramework && (name === "start" || name === "dev")) { continue; }
       services.push({
         name: `npm run ${name}`,
         role: guessRoleFromNpmScript(name, scripts[name]),
@@ -298,10 +303,10 @@ function extractComposeServiceNames(yamlContent: string): string[] {
 
 function guessRoleFromName(name: string): ServiceDefinition["role"] {
   const n = name.toLowerCase();
-  if (/front|ui|web|client|app/.test(n)) { return "frontend"; }
-  if (/back|api|server|gateway/.test(n)) { return "backend"; }
-  if (/db|database|postgres|mysql|mongo|redis|mariadb/.test(n)) { return "database"; }
-  if (/proxy|traefik|nginx|caddy|queue|worker|mail/.test(n)) { return "infra"; }
+  if (/\bfront(end)?\b|\bgui\b|\bweb\b|\bclient\b|\bdashboard\b/.test(n)) { return "frontend"; }
+  if (/\bback(end)?\b|\bapi\b|\bserver\b|\bgateway\b/.test(n)) { return "backend"; }
+  if (/\bdb\b|\bdatabase\b|\bpostgres\b|\bmysql\b|\bmongo\b|\bredis\b|\bmariadb\b|\bsqlite\b/.test(n)) { return "database"; }
+  if (/\bproxy\b|\btraefik\b|\bnginx\b|\bcaddy\b|\bqueue\b|\bworker\b|\bmail\b|\bwatchtower\b|\bportainer\b|\bdozzle\b|\bmonitor\b|\blog(s)?\b|\bagent\b/.test(n)) { return "infra"; }
   return "other";
 }
 
