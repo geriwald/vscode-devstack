@@ -13,6 +13,8 @@ export interface ServiceDefinition {
   cwd?: string;
   /** How the service was discovered */
   source: "auto" | "config";
+  /** Technology that detected this service (e.g. "Next.js", "Vite") */
+  tech?: string;
 }
 
 export interface DetectedStack {

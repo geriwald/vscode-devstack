@@ -4,18 +4,18 @@ import { ServiceMeta, TechDescription } from "./types";
  * Metadata for known service commands.
  * Keyed by command substring or exact match.
  */
-const SERVICE_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
-  // Next.js
-  { match: /next dev|npm run dev.*next/, meta: { defaultPort: 3000, mode: "dev", hotReload: true, modeLabel: "dev · hot reload" } },
-  { match: /next start|next build/, meta: { defaultPort: 3000, mode: "prod", hotReload: false, modeLabel: "prod" } },
-  // Vite
-  { match: /vite|npm run dev/, meta: { defaultPort: 5173, mode: "dev", hotReload: true, modeLabel: "dev · HMR" } },
-  // Astro
-  { match: /astro dev/, meta: { defaultPort: 4321, mode: "dev", hotReload: true, modeLabel: "dev · hot reload" } },
-  // Nuxt
-  { match: /nuxt dev|nuxi dev/, meta: { defaultPort: 3000, mode: "dev", hotReload: true, modeLabel: "dev · HMR" } },
-  // Angular
-  { match: /ng serve/, meta: { defaultPort: 4200, mode: "dev", hotReload: true, modeLabel: "dev · live reload" } },
+/** Tech-specific metadata — matched by tech name first, then by command regex. */
+const TECH_META: Record<string, ServiceMeta> = {
+  "Next.js":  { defaultPort: 3000, mode: "dev", hotReload: true, modeLabel: "dev · hot reload" },
+  "Nuxt":     { defaultPort: 3000, mode: "dev", hotReload: true, modeLabel: "dev · HMR" },
+  "Remix":    { defaultPort: 3000, mode: "dev", hotReload: true, modeLabel: "dev · HMR" },
+  "Astro":    { defaultPort: 4321, mode: "dev", hotReload: true, modeLabel: "dev · hot reload" },
+  "Vite":     { defaultPort: 5173, mode: "dev", hotReload: true, modeLabel: "dev · HMR" },
+  "Angular":  { defaultPort: 4200, mode: "dev", hotReload: true, modeLabel: "dev · live reload" },
+};
+
+/** Command-based metadata — matched by regex against the command string. */
+const COMMAND_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
   // Go
   { match: /go run/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
   { match: /air|gow/, meta: { mode: "dev", hotReload: true, modeLabel: "dev · hot reload" } },
@@ -41,11 +41,17 @@ const SERVICE_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
 ];
 
 /**
- * Look up metadata for a service command.
- * Returns the first match, or an empty object if no match.
+ * Look up metadata for a service.
+ * Uses tech name first (exact match), then falls back to command regex.
  */
-export function getServiceMeta(command: string): ServiceMeta {
-  for (const entry of SERVICE_META) {
+export function getServiceMeta(command: string, tech?: string): ServiceMeta {
+  // Tech-specific lookup (covers generic commands like "npm run dev")
+  if (tech && TECH_META[tech]) {
+    return TECH_META[tech];
+  }
+
+  // Command-based fallback
+  for (const entry of COMMAND_META) {
     if (entry.match.test(command)) {
       return entry.meta;
     }
@@ -58,7 +64,7 @@ export function getServiceMeta(command: string): ServiceMeta {
  * Used in the Stack Overview section of the webview.
  */
 export const TECH_DESCRIPTIONS: Record<string, TechDescription> = {
-  "Next.js":          { description: "React framework with SSR/SSG",         icon: "globe",          color: "#000000" },
+  "Next.js":          { description: "React framework with SSR/SSG",         icon: "globe",          color: "#CCCCCC" },
   "Nuxt":             { description: "Vue.js framework with SSR/SSG",        icon: "globe",          color: "#00DC82" },
   "Remix":            { description: "React full-stack web framework",       icon: "globe",          color: "#3992FF" },
   "Astro":            { description: "Static site builder, multi-framework", icon: "rocket",         color: "#FF5D01" },
@@ -66,8 +72,8 @@ export const TECH_DESCRIPTIONS: Record<string, TechDescription> = {
   "Angular":          { description: "TypeScript SPA framework",             icon: "compass",        color: "#DD0031" },
   "Go":               { description: "Compiled backend language",            icon: "server",         color: "#00ADD8" },
   "FastAPI":          { description: "Python async web framework",           icon: "server",         color: "#009688" },
-  "Django":           { description: "Python full-stack web framework",      icon: "server",         color: "#092E20" },
-  "Flask":            { description: "Python lightweight web framework",     icon: "server",         color: "#000000" },
+  "Django":           { description: "Python full-stack web framework",      icon: "server",         color: "#44B78B" },
+  "Flask":            { description: "Python lightweight web framework",     icon: "server",         color: "#CCCCCC" },
   "Rust":             { description: "Systems language, high performance",   icon: "server",         color: "#DEA584" },
   "Docker Compose":   { description: "Multi-container orchestration",        icon: "package",        color: "#2496ED" },
   "Makefile":         { description: "Task runner via make targets",         icon: "terminal",       color: "#6D8086" },

@@ -331,7 +331,7 @@ export function deduplicateServices(stacks: DetectedStack[]): ServiceDefinition[
   for (const stack of sorted) {
     for (const svc of stack.services) {
       if (!seen.has(svc.command)) {
-        seen.set(svc.command, svc);
+        seen.set(svc.command, { ...svc, tech: stack.tech });
       }
     }
   }

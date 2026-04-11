@@ -30,7 +30,7 @@
         {
           "type": "webview",
           "id": "devstackPanel",
-          "name": "Services"
+          "name": ""
         }
       ]
     },
