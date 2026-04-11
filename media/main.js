@@ -62,11 +62,12 @@
 
       for (const svc of services) {
         const isRunning = svc.status === "running";
-        const statusClass = isRunning ? "status-running" : "status-stopped";
-        const statusIcon = isRunning ? "&#x25CF;" : "&#x25CB;";
-        const actionIcon = isRunning ? "&#x25A0;" : "&#x25B6;";
-        const actionCmd = isRunning ? "stop" : "start";
-        const actionTitle = isRunning ? "Stop" : "Start";
+        const isError = svc.status === "error";
+        const statusClass = isError ? "status-error" : isRunning ? "status-running" : "status-stopped";
+        const statusIcon = isError ? "&#x2716;" : isRunning ? "&#x25CF;" : "&#x25CB;";
+        const actionIcon = (isRunning || isError) ? "&#x25A0;" : "&#x25B6;";
+        const actionCmd = (isRunning || isError) ? "stop" : "start";
+        const actionTitle = (isRunning || isError) ? "Stop" : "Start";
 
         html += '<div class="service-item">';
         html += '  <div class="service-row">';

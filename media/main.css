@@ -147,6 +147,10 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+.status-error {
+  color: var(--vscode-testing-iconFailed);
+}
+
 .service-name {
   font-weight: 500;
   flex: 1;
