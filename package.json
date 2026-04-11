@@ -28,22 +28,13 @@
     "views": {
       "devstack": [
         {
-          "id": "devstackServices",
+          "type": "webview",
+          "id": "devstackPanel",
           "name": "Services"
         }
       ]
     },
     "commands": [
-      {
-        "command": "devstack.startService",
-        "title": "Start Service",
-        "icon": "$(play)"
-      },
-      {
-        "command": "devstack.stopService",
-        "title": "Stop Service",
-        "icon": "$(debug-stop)"
-      },
       {
         "command": "devstack.refresh",
         "title": "Refresh",
@@ -59,25 +50,13 @@
       "view/title": [
         {
           "command": "devstack.refresh",
-          "when": "view == devstackServices",
+          "when": "view == devstackPanel",
           "group": "navigation"
         },
         {
           "command": "devstack.editConfig",
-          "when": "view == devstackServices",
+          "when": "view == devstackPanel",
           "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "devstack.startService",
-          "when": "view == devstackServices && viewItem == service-stopped",
-          "group": "inline"
-        },
-        {
-          "command": "devstack.stopService",
-          "when": "view == devstackServices && viewItem == service-running",
-          "group": "inline"
         }
       ]
     }
