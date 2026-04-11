@@ -46,3 +46,23 @@ export const ROLE_ORDER: ServiceRole[] = [
   "fullstack",
   "other",
 ];
+
+export interface ServiceMeta {
+  /** Default port this service listens on (if known) */
+  defaultPort?: number;
+  /** Mode: dev, prod, build, test, watch */
+  mode?: "dev" | "prod" | "build" | "test" | "watch" | "run";
+  /** Whether the service supports hot reload / live refresh */
+  hotReload?: boolean;
+  /** Short label for the mode badge (e.g. "dev · hot reload") */
+  modeLabel?: string;
+}
+
+export interface TechDescription {
+  /** Short human-readable description */
+  description: string;
+  /** VS Code codicon name for the icon */
+  icon: string;
+  /** CSS color for the icon */
+  color: string;
+}
