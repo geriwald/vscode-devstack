@@ -117,10 +117,10 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
 
   private getHtml(webview: vscode.Webview): string {
     const cssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "src", "webview", "main.css")
+      vscode.Uri.joinPath(this.extensionUri, "media", "main.css")
     );
     const jsUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "src", "webview", "main.js")
+      vscode.Uri.joinPath(this.extensionUri, "media", "main.js")
     );
 
     // Build tech descriptions JSON for the webview
