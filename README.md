@@ -15,7 +15,7 @@ Auto-detect your project's tech stack and launch dev services from the VS Code a
 
 Open a project. Click the DevStack icon in the activity bar. Click play on any detected service.
 
-### Custom services
+### Custom services (optional)
 
 Create `.devstack.json` at the workspace root (or use the gear icon in the DevStack panel):
 
