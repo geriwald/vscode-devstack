@@ -15,6 +15,7 @@ interface WebviewState {
     defaultPort?: number;
     url?: string;
     role: ServiceRole;
+    composeServices?: string[];
   }>>;
 }
 
@@ -115,6 +116,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
           defaultPort: port,
           url,
           role: s.role,
+          composeServices: s.composeServices,
         };
       });
     }

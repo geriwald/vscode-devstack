@@ -184,37 +184,25 @@ const detectDockerCompose: Detector = (root) => {
 
   const services: ServiceDefinition[] = [];
 
-  // Parse compose file to extract service names
+  // Parse compose file to extract service names (shown as badges)
+  let composeServices: string[] | undefined;
   try {
     const content = fs.readFileSync(path.join(root, found), "utf-8");
     const serviceNames = extractComposeServiceNames(content);
     if (serviceNames.length > 0) {
-      // Add a "start all" service
-      services.push({
-        name: "Docker Compose (all)",
-        role: "infra",
-        command: `docker compose -f ${found} up`,
-        source: "auto",
-      });
-      // Add individual services
-      for (const svc of serviceNames) {
-        const role = guessRoleFromName(svc);
-        services.push({
-          name: `Docker: ${svc}`,
-          role,
-          command: `docker compose -f ${found} up ${svc}`,
-          source: "auto",
-        });
-      }
+      composeServices = serviceNames;
     }
   } catch {
-    services.push({
-      name: "Docker Compose",
-      role: "infra",
-      command: `docker compose -f ${found} up`,
-      source: "auto",
-    });
+    // Ignore parse errors
   }
+
+  services.push({
+    name: "Docker Compose",
+    role: "infra",
+    command: `docker compose -f ${found} up`,
+    source: "auto",
+    composeServices,
+  });
 
   return { tech: "Docker Compose", services };
 };

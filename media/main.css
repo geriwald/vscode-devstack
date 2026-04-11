@@ -212,6 +212,11 @@ body {
   color: #fff;
 }
 
+.badge-compose {
+  background: #1a5276;
+  color: #85c1e9;
+}
+
 .service-url {
   margin-top: 2px;
 }

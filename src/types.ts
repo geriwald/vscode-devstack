@@ -15,6 +15,8 @@ export interface ServiceDefinition {
   source: "auto" | "config";
   /** Technology that detected this service (e.g. "Next.js", "Vite") */
   tech?: string;
+  /** Individual service names from docker-compose (for display as badges) */
+  composeServices?: string[];
 }
 
 export interface DetectedStack {

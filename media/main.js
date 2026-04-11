@@ -79,14 +79,23 @@
 
         // Badges
         const badges = [];
-        if (svc.modeLabel) { badges.push(svc.modeLabel); }
-        if (svc.defaultPort) { badges.push(":" + svc.defaultPort); }
+        if (svc.modeLabel) { badges.push({ text: svc.modeLabel, type: "mode" }); }
+        if (svc.defaultPort) { badges.push({ text: ":" + svc.defaultPort, type: "port" }); }
+
+        // Docker Compose individual services as badges
+        if (svc.composeServices && svc.composeServices.length > 0) {
+          for (const cs of svc.composeServices) {
+            badges.push({ text: cs, type: "compose" });
+          }
+        }
 
         if (badges.length > 0) {
           html += '    <div class="service-badges">';
           for (const b of badges) {
-            const cls = b.includes("hot reload") || b.includes("HMR") ? "badge badge-hot" : "badge";
-            html += '      <span class="' + cls + '">' + escapeHtml(b) + '</span>';
+            let cls = "badge";
+            if (b.type === "mode" && (b.text.includes("hot reload") || b.text.includes("HMR"))) { cls = "badge badge-hot"; }
+            if (b.type === "compose") { cls = "badge badge-compose"; }
+            html += '      <span class="' + cls + '">' + escapeHtml(b.text) + '</span>';
           }
           html += '    </div>';
         }
