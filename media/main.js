@@ -5,6 +5,12 @@
 
   let currentState = null;
 
+  // Render initial state injected by the provider (available before postMessage)
+  if (typeof INITIAL_STATE !== "undefined" && INITIAL_STATE) {
+    currentState = INITIAL_STATE;
+    render(currentState);
+  }
+
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (message.type === "update") {

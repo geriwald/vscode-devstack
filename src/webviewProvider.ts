@@ -67,6 +67,13 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
     });
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
+
+    // Send current state once the webview is ready
+    // (setServices may have been called before the view was resolved)
+    if (this.services.length > 0) {
+      const state = this.buildState();
+      webviewView.webview.postMessage({ type: "update", state });
+    }
   }
 
   setServices(services: ServiceDefinition[], techs: string[]): void {
@@ -133,6 +140,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
 
     const roleLabels = JSON.stringify(ROLE_LABELS);
     const techDescs = JSON.stringify(techDescriptions);
+    const initialState = JSON.stringify(this.buildState());
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -146,6 +154,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
   <script>
     const ROLE_LABELS = ${roleLabels};
     const TECH_DESCRIPTIONS = ${techDescs};
+    const INITIAL_STATE = ${initialState};
   </script>
   <script src="${jsUri}"></script>
 </body>
