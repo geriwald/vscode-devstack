@@ -4,15 +4,37 @@ import { DetectedStack, ServiceDefinition } from "./types";
 
 /**
  * Detect the tech stack of a project by examining marker files.
+ * Scans the workspace root, then subdirectories up to 2 levels deep.
  * Returns all detected stacks with their launchable services.
  */
 export function detectStacks(workspaceRoot: string): DetectedStack[] {
   const stacks: DetectedStack[] = [];
 
+  // Scan workspace root
   for (const detector of DETECTORS) {
     const result = detector(workspaceRoot);
     if (result) {
       stacks.push(result);
+    }
+  }
+
+  // Scan subdirectories (up to depth 2) for nested projects
+  for (const subdir of listSubdirs(workspaceRoot, 2)) {
+    const rel = path.relative(workspaceRoot, subdir);
+    for (const detector of DETECTORS) {
+      const result = detector(subdir);
+      if (result) {
+        // Tag each service with the subdirectory
+        const tagged: DetectedStack = {
+          tech: result.tech,
+          services: result.services.map((svc) => ({
+            ...svc,
+            name: `${svc.name} (${rel})`,
+            cwd: rel,
+          })),
+        };
+        stacks.push(tagged);
+      }
     }
   }
 
@@ -137,8 +159,25 @@ const detectPythonFastAPI: Detector = (root) => {
     }
   }
 
+  const venvBin = findVenvBin(root);
+  const python = venvBin ? path.join(venvBin, "python") : "python";
+  const uvicorn = venvBin ? path.join(venvBin, "uvicorn") : "uvicorn";
+
+  // Discover the uvicorn app entry point:
+  // 1. If main.py exists locally, use main:app (works when cwd is the subdir)
+  // 2. Try pyproject.toml [project.scripts] for explicit entry
+  // 3. Fallback to main:app
+  let appEntry = "main:app";
+  if (fileExists(root, "main.py")) {
+    appEntry = "main:app";
+  } else if (fileExists(root, "app.py")) {
+    appEntry = "app:app";
+  } else {
+    appEntry = discoverFastAPIEntry(root) ?? "main:app";
+  }
+
   if (hasFastAPI) {
-    const cmd = fileExists(root, "Makefile") ? "make run" : "uvicorn main:app --reload";
+    const cmd = fileExists(root, "Makefile") ? "make run" : `${uvicorn} ${appEntry} --reload --port 8000`;
     return {
       tech: "FastAPI",
       services: [
@@ -150,7 +189,7 @@ const detectPythonFastAPI: Detector = (root) => {
     return {
       tech: "Django",
       services: [
-        { name: "Django Server", role: "backend", command: "python manage.py runserver", source: "auto" },
+        { name: "Django Server", role: "backend", command: `${python} manage.py runserver`, source: "auto" },
       ],
     };
   }
@@ -158,7 +197,7 @@ const detectPythonFastAPI: Detector = (root) => {
     return {
       tech: "Flask",
       services: [
-        { name: "Flask Server", role: "backend", command: "flask run --reload", source: "auto" },
+        { name: "Flask Server", role: "backend", command: `${venvBin ? path.join(venvBin, "flask") : "flask"} run --reload`, source: "auto" },
       ],
     };
   }
@@ -261,6 +300,63 @@ const detectNpmScripts: Detector = (root) => {
   if (services.length === 0) { return null; }
   return { tech: "npm scripts", services };
 };
+
+// --- Python venv discovery ---
+
+const VENV_DIRS = [".venv", "venv", "env", ".env"];
+
+/** Walk up from `root` looking for a Python venv. Returns the bin/ path or null. */
+function findVenvBin(startDir: string): string | null {
+  let dir = startDir;
+  const root = path.parse(dir).root;
+  while (dir !== root) {
+    for (const name of VENV_DIRS) {
+      const bin = path.join(dir, name, "bin");
+      if (fs.existsSync(path.join(bin, "python"))) {
+        return bin;
+      }
+    }
+    dir = path.dirname(dir);
+  }
+  return null;
+}
+
+/** Try to extract the FastAPI app entry point from pyproject.toml [project.scripts]. */
+function discoverFastAPIEntry(root: string): string | null {
+  const pyprojectPath = path.join(root, "pyproject.toml");
+  if (!fs.existsSync(pyprojectPath)) { return null; }
+  try {
+    const content = fs.readFileSync(pyprojectPath, "utf-8");
+    // Match patterns like: some-name = "webapp.backend.main:app"
+    const match = content.match(/=\s*"([^"]+:app)"/);
+    if (match) { return match[1]; }
+  } catch {
+    // Ignore
+  }
+  return null;
+}
+
+// --- Subdirectory scanning ---
+
+const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "out", "build", ".next", ".nuxt", "__pycache__", ".venv", "venv", "target", "vendor"]);
+
+function listSubdirs(root: string, maxDepth: number, currentDepth = 1): string[] {
+  if (currentDepth > maxDepth) { return []; }
+  const dirs: string[] = [];
+  try {
+    const entries = fs.readdirSync(root, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".") && entry.name !== ".") { continue; }
+      if (IGNORED_DIRS.has(entry.name)) { continue; }
+      const full = path.join(root, entry.name);
+      dirs.push(full);
+      dirs.push(...listSubdirs(full, maxDepth, currentDepth + 1));
+    }
+  } catch {
+    // Permission denied or similar — skip
+  }
+  return dirs;
+}
 
 // --- Helpers ---
 
