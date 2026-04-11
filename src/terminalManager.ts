@@ -62,7 +62,11 @@ export class TerminalManager implements vscode.Disposable {
     });
 
     terminal.show();
-    terminal.sendText(service.command);
+
+    // Wait for shell integration to be ready before sending the command.
+    // This lets VS Code extensions (e.g. Python venv auto-activation) finish
+    // their shell setup. Without this, they can send Ctrl+C which kills our process.
+    this.sendCommandWhenReady(terminal, service.command);
 
     const managed: ManagedTerminal = { terminal, service, status: "running" };
     this.terminals.set(key, managed);
@@ -91,6 +95,36 @@ export class TerminalManager implements vscode.Disposable {
       setTimeout(() => managed.terminal.dispose(), 500);
     }
     this.terminals.clear();
+  }
+
+  /**
+   * Send a command to a terminal, waiting for shell integration if available.
+   * Uses executeCommand (which waits for prompt) instead of sendText.
+   * Falls back to sendText after 3s if shell integration never activates.
+   */
+  private sendCommandWhenReady(terminal: vscode.Terminal, command: string): void {
+    if (terminal.shellIntegration) {
+      terminal.shellIntegration.executeCommand(command);
+      return;
+    }
+
+    let sent = false;
+
+    const listener = vscode.window.onDidChangeTerminalShellIntegration(({ terminal: t, shellIntegration }) => {
+      if (t === terminal && !sent) {
+        sent = true;
+        listener.dispose();
+        shellIntegration.executeCommand(command);
+      }
+    });
+
+    setTimeout(() => {
+      if (!sent) {
+        sent = true;
+        listener.dispose();
+        terminal.sendText(command);
+      }
+    }, 3000);
   }
 
   dispose(): void {
