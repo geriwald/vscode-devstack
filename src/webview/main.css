@@ -1,0 +1,236 @@
+/* Use VS Code theme variables for native look */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBar-background);
+  padding: 0;
+}
+
+/* --- Stack Overview --- */
+
+.stack-section {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-sideBarSectionHeader-foreground);
+  background: var(--vscode-sideBarSectionHeader-background);
+  padding: 4px 0;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.tech-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.tech-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tech-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tech-desc {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Services --- */
+
+.role-section {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--vscode-sideBarSectionHeader-background);
+}
+
+.role-header:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.role-chevron {
+  font-size: 12px;
+  transition: transform 0.15s;
+  color: var(--vscode-foreground);
+}
+
+.role-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.role-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-sideBarSectionHeader-foreground);
+  letter-spacing: 0.5px;
+}
+
+.role-count {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+.role-services {
+  overflow: hidden;
+}
+
+.role-services.collapsed {
+  display: none;
+}
+
+/* --- Service Item --- */
+
+.service-item {
+  padding: 6px 12px 6px 20px;
+  cursor: default;
+}
+
+.service-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-status {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.status-running {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.status-stopped {
+  color: var(--vscode-descriptionForeground);
+}
+
+.service-name {
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-action {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.service-item:hover .service-action {
+  opacity: 1;
+}
+
+.service-action:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.service-details {
+  padding: 2px 0 2px 22px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.service-command {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.95em;
+}
+
+.service-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  white-space: nowrap;
+}
+
+.badge-hot {
+  background: #c05621;
+  color: #fff;
+}
+
+.service-url {
+  margin-top: 2px;
+}
+
+.service-url a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+  font-size: 0.95em;
+}
+
+.service-url a:hover {
+  text-decoration: underline;
+  color: var(--vscode-textLink-activeForeground);
+}
+
+/* --- Empty state --- */
+
+.empty-state {
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
