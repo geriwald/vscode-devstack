@@ -28,8 +28,8 @@ const COMMAND_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
   // Rust
   { match: /cargo run/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
   { match: /cargo watch/, meta: { mode: "dev", hotReload: true, modeLabel: "dev · watch" } },
-  // Docker
-  { match: /docker compose.*up/, meta: { mode: "run", hotReload: false, modeLabel: "containers" } },
+  // Docker (no modeLabel — compose services are shown as badges instead)
+  { match: /docker compose.*up/, meta: { mode: "run", hotReload: false } },
   // Make
   { match: /make dev/, meta: { mode: "dev", hotReload: false, modeLabel: "dev" } },
   { match: /make run|make start|make serve/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
