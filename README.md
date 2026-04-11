@@ -2,6 +2,8 @@
 
 Auto-detect your project's tech stack and launch dev services from the VS Code activity bar.
 
+![DevStack screenshot](resources/screenshot.png)
+
 ## Features
 
 - **Auto-detection** of Next.js, Nuxt, Remix, Astro, Vite, Angular, Go, FastAPI, Django, Flask, Rust, Docker Compose, Makefile, and npm scripts

@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "geriwald",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geriwald/vscode-devstack.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
