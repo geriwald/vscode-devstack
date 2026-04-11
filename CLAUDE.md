@@ -1,64 +1,68 @@
-# DevStack
+# CLAUDE.md
 
-VS Code extension: auto-detect the current workspace's tech stack and launch dev services from the activity bar.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Purpose
+## What is this
 
-Géraud opens a project and doesn't remember the stack. DevStack scans the workspace, lists launchable services grouped by role (Frontend / Backend / Database / Infra / Full Stack), and exposes play/stop buttons that spawn managed terminals.
-
-## Architecture
-
-```
-src/
-├── extension.ts       # Entry point: wires up tree view, commands, file watcher
-├── stackDetector.ts   # Detects tech from marker files (package.json, go.mod, etc.)
-├── configManager.ts   # Loads .devstack.json overrides
-├── terminalManager.ts # Spawns/tracks VS Code terminals, emits status changes
-├── treeProvider.ts    # TreeDataProvider for the activity bar panel
-└── types.ts           # Shared types (ServiceDefinition, ServiceRole, etc.)
-```
-
-**Key design points:**
-
-- **Single workspace**: scans the first workspace folder only — not multi-project by design.
-- **Status = terminal alive**: a service is "running" iff its terminal is still open. Closing the terminal flips status to stopped.
-- **Stop = Ctrl+C then dispose**: sends `\x03` to the terminal, waits 500ms, disposes it.
-- **Deduplication**: framework-specific detectors (Next.js, Vite…) win over generic ones (npm scripts, Makefile) when commands collide.
-- **Config override**: `.devstack.json` at workspace root can add services (`services: [...]`) or disable auto-detected ones (`disable: ["name"]`).
-
-## Supported stacks (v0.1)
-
-Next.js · Nuxt · Remix · Astro · Vite · Angular · Go · FastAPI · Django · Flask · Rust · Docker Compose · Makefile · npm scripts
-
-Adding a new detector: append a `Detector` function in `stackDetector.ts` and add it to the `DETECTORS` array. Framework-specific detectors go before generic ones.
+VS Code extension that auto-detects a workspace's tech stack and exposes launchable dev services in the activity bar. No tests, no linter config — it's a single-developer v0.1.
 
 ## Build & install
 
 ```bash
-cd ~/code/devstack
 npm install
-npx tsc -p ./                              # compile
+npm run compile                              # or: npx tsc -p ./
+npm run lint                                 # eslint src --ext ts (no config yet — will fail until .eslintrc is added)
 npx @vscode/vsce package --allow-missing-repository  # produce .vsix
-code --install-extension devstack-0.1.0.vsix
+code --install-extension devstack-0.1.0.vsix # then reload the window
 ```
 
-Then reload the VS Code window.
+Watch mode: `npm run watch` (tsc in watch mode).
 
-## Commands
+No test runner is configured. No CI pipeline.
+
+## Architecture
+
+Files in `src/` (TypeScript, compiled to `out/`) plus `media/` (webview assets, served as-is):
+
+- **extension.ts** — entry point. Wires WebviewView, commands, and a `FileSystemWatcher` that re-scans on marker file changes. The `scanAndRefresh` function is the main pipeline: detect → deduplicate → merge config → render.
+- **stackDetector.ts** — ordered array of `Detector` functions (framework-specific first, generic last). Each detector reads marker files synchronously. `deduplicateServices()` dedupes by command string, preferring framework detectors over generic ones (npm scripts, Makefile). Sets `tech` field on each service for metadata lookup.
+- **serviceMeta.ts** — two lookup tables: `TECH_META` (by tech name, e.g. "Next.js" → port 3000) and `COMMAND_META` (by command regex fallback). Also exports `TECH_DESCRIPTIONS` for the stack overview display (icon, color, description per tech).
+- **configManager.ts** — loads `.devstack.json` overrides: `services` array (source: "config") and `disable` list. `mergeServices()` merges auto-detected + config services by name.
+- **terminalManager.ts** — `TerminalManager` class. Keys terminals by `role::name`. Uses `onDidChangeTerminalShellIntegration` + `executeCommand()` to send commands after shell setup (venv activation, etc.), with 3s fallback to `sendText`. Stop sends `\x03` then `dispose()` after 500ms.
+- **webviewProvider.ts** — `DevStackWebviewProvider` (WebviewView). Builds state snapshots and sends them to the webview via `postMessage`. Receives `start`/`stop`/`openUrl` commands back. Injects `INITIAL_STATE` in HTML for immediate render on panel open.
+- **types.ts** — shared types. `ServiceDefinition` includes optional `tech` and `composeServices` fields. `ROLE_ORDER` drives the display order of groups.
+- **media/main.css** — webview styles using VS Code CSS variables (`--vscode-*`) for native theme integration.
+- **media/main.js** — vanilla JS webview: renders stack overview, grouped services with play/stop, mode badges, compose service badges, and clickable localhost URLs.
+
+**Data flow:** `detectStacks()` → `deduplicateServices()` (injects `tech` field) → `loadConfig()` + `mergeServices()` → `webviewProvider.setServices()` → `buildState()` enriches with `getServiceMeta()` → `postMessage` to webview → webview renders.
+
+## Key design decisions
+
+- **Single workspace only** — `workspaceFolders[0]` only, not multi-root.
+- **WebviewView, not TreeView** — HTML/CSS/JS sidebar panel for rich rendering (badges, colors, clickable URLs). TreeView was too limited (single-line description, no custom HTML).
+- **Status = terminal alive** — closing the terminal is the only "stopped" signal. A crashed process inside the terminal still shows "running".
+- **Shell integration for command dispatch** — uses `executeCommand()` via `onDidChangeTerminalShellIntegration` to wait for shell setup (Python venv auto-activation, etc.) before sending commands. Fallback to `sendText` after 3s.
+- **No YAML dependency** — Docker Compose parsing is hand-rolled (regex on 2-space-indented keys under `services:`).
+- **Docker services as badges** — individual compose services are displayed as badges on a single "Docker Compose" item (always under Infrastructure), not as separate service items.
+- **Metadata lookup: tech-first, command-fallback** — `getServiceMeta(command, tech)` checks `TECH_META[tech]` first (avoids ambiguous commands like `npm run dev` matching the wrong framework), then falls back to `COMMAND_META` regex.
+- **Synchronous file I/O** — all detection is sync (`fs.existsSync` / `fs.readFileSync`). Fine for startup, would need rework for large workspaces.
+
+## Adding a new detector
+
+1. Write a `Detector` function in `stackDetector.ts` (signature: `(root: string) => DetectedStack | null`).
+2. Add it to the `DETECTORS` array. Framework-specific detectors go before generic ones — order matters for deduplication.
+3. Add a `TECH_META` entry in `serviceMeta.ts` if the tech has a known default port/mode.
+4. Add a `TECH_DESCRIPTIONS` entry in `serviceMeta.ts` for the stack overview display.
+
+## VS Code extension commands
 
 - `devstack.refresh` — rescan the workspace
-- `devstack.startService` — launch a service (inline play button)
-- `devstack.stopService` — stop a service (inline stop button)
-- `devstack.editConfig` — open `.devstack.json` (creates a template if missing)
+- `devstack.editConfig` — open/create `.devstack.json`
 
-## Known limitations
-
-- No real process status — closing the terminal is the only "stopped" signal. If a dev server crashes inside the terminal, DevStack still shows "running".
-- No port detection / healthcheck.
-- No multi-root workspace support.
-- Docker Compose service detection uses a hand-rolled YAML parser (top-level `services:` block only). No full YAML dependency.
+Start/stop are handled via webview `postMessage`, not VS Code commands.
 
 ## Not in scope
 
-- Multi-project dashboard — explicitly rejected by the user.
-- Project switching — use VS Code's native Recent Workspaces.
+- Multi-project dashboard (explicitly rejected).
+- Dynamic port detection / healthcheck.
+- Multi-root workspace support.
