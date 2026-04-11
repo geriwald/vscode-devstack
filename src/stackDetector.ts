@@ -24,13 +24,14 @@ export function detectStacks(workspaceRoot: string): DetectedStack[] {
     for (const detector of DETECTORS) {
       const result = detector(subdir);
       if (result) {
-        // Tag each service with the subdirectory
+        // Tag each service with the subdirectory.
+        // Respect cwd already set by the detector (e.g. "" = workspace root for packages).
         const tagged: DetectedStack = {
           tech: result.tech,
           services: result.services.map((svc) => ({
             ...svc,
             name: `${svc.name} (${rel})`,
-            cwd: rel,
+            cwd: svc.cwd !== undefined ? svc.cwd : rel,
           })),
         };
         stacks.push(tagged);
@@ -163,26 +164,33 @@ const detectPythonFastAPI: Detector = (root) => {
   const python = venvBin ? path.join(venvBin, "python") : "python";
   const uvicorn = venvBin ? path.join(venvBin, "uvicorn") : "uvicorn";
 
-  // Discover the uvicorn app entry point:
-  // 1. If main.py exists locally, use main:app (works when cwd is the subdir)
-  // 2. Try pyproject.toml [project.scripts] for explicit entry
-  // 3. Fallback to main:app
-  let appEntry = "main:app";
-  if (fileExists(root, "main.py")) {
+  // Discover the uvicorn app entry point.
+  // Prefer pyproject.toml [project.scripts] entry (handles packages with relative imports).
+  // Fall back to main:app or app:app for simple single-file projects.
+  const pyprojectEntry = discoverFastAPIEntry(root);
+  let appEntry: string;
+  let needsPackageRoot = false;
+
+  if (pyprojectEntry) {
+    // Entry like "webapp.backend.main:app" — must be launched from the package root
+    appEntry = pyprojectEntry;
+    needsPackageRoot = pyprojectEntry.includes(".");
+  } else if (fileExists(root, "main.py")) {
     appEntry = "main:app";
   } else if (fileExists(root, "app.py")) {
     appEntry = "app:app";
   } else {
-    appEntry = discoverFastAPIEntry(root) ?? "main:app";
+    appEntry = "main:app";
   }
 
   if (hasFastAPI) {
     const cmd = fileExists(root, "Makefile") ? "make run" : `${uvicorn} ${appEntry} --reload --port 8000`;
+    const svc: ServiceDefinition = { name: "FastAPI Server", role: "backend", command: cmd, source: "auto" };
+    // When entry is a dotted module path, cwd must stay at the workspace root
+    if (needsPackageRoot) { svc.cwd = ""; }
     return {
       tech: "FastAPI",
-      services: [
-        { name: "FastAPI Server", role: "backend", command: cmd, source: "auto" },
-      ],
+      services: [svc],
     };
   }
   if (hasDjango) {
