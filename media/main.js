@@ -120,10 +120,16 @@
   }
 
   function attachListeners() {
-    // Action buttons (start/stop)
+    // Action buttons (start/stop) — debounce to prevent double-click issues
     document.querySelectorAll(".service-action").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        e.preventDefault();
+        // Ignore clicks during the debounce window
+        if (btn.dataset.busy) { return; }
+        btn.dataset.busy = "1";
+        setTimeout(() => { delete btn.dataset.busy; }, 1000);
+
         const action = btn.getAttribute("data-action");
         const name = btn.getAttribute("data-name");
         const role = btn.getAttribute("data-role");
