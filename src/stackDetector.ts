@@ -257,25 +257,47 @@ const detectDockerCompose: Detector = (root) => {
 const detectMakefile: Detector = (root) => {
   if (!fileExists(root, "Makefile")) { return null; }
   const content = fs.readFileSync(path.join(root, "Makefile"), "utf-8");
-  const services: ServiceDefinition[] = [];
+  const targets = extractMakefileTargets(content);
+  if (targets.length === 0) { return null; }
 
-  // Look for common dev targets
-  const devTargets = ["dev", "serve", "start", "run", "watch"];
-  for (const target of devTargets) {
-    const regex = new RegExp(`^${target}\\s*:`, "m");
-    if (regex.test(content)) {
-      services.push({
-        name: `make ${target}`,
-        role: "other",
-        command: `make ${target}`,
-        source: "auto",
-      });
-    }
-  }
+  const services: ServiceDefinition[] = targets.map((target) => ({
+    name: `make ${target}`,
+    role: "other",
+    command: `make ${target}`,
+    source: "auto",
+  }));
 
-  if (services.length === 0) { return null; }
   return { tech: "Makefile", services };
 };
+
+/**
+ * Extract real, runnable targets from a Makefile.
+ * Skips variable assignments, special targets (.PHONY, .SUFFIXES, ...),
+ * pattern rules, file-path targets, and private targets starting with "_".
+ */
+function extractMakefileTargets(content: string): string[] {
+  const targets: string[] = [];
+  const seen = new Set<string>();
+  const lines = content.split("\n");
+
+  for (const line of lines) {
+    // Skip indented lines (recipes) and blank/comment lines
+    if (/^\s/.test(line) || line.trim() === "" || line.startsWith("#")) { continue; }
+
+    // Match a target definition: name: or name : (no "=" before the colon)
+    const match = line.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*:(?!=)/);
+    if (!match) { continue; }
+
+    const name = match[1];
+    if (name.startsWith("_")) { continue; }
+    if (seen.has(name)) { continue; }
+
+    seen.add(name);
+    targets.push(name);
+  }
+
+  return targets;
+}
 
 const detectNpmScripts: Detector = (root) => {
   const pkg = readJsonSafe(path.join(root, "package.json"));
