@@ -1,0 +1,10 @@
+{
+  "services": [
+    {
+      "name": "Reload Extension",
+      "role": "other",
+      "command": "rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
+    }
+  ],
+  "disable": []
+}

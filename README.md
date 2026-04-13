@@ -37,13 +37,15 @@ Create `.devstack.json` at the workspace root (or use the gear icon in the DevSt
 
 Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`.
 
+This repo dogfoods its own config: see [.devstack.json](.devstack.json) for a real example — a one-click "Reload Extension" service that repackages the `.vsix` and reinstalls it, so you can iterate on the extension without leaving VS Code.
+
 ## Build from source
 
 ```bash
 npm install
 npx tsc -p ./
 npx @vscode/vsce package --allow-missing-repository
-code --install-extension devstack-0.1.0.vsix
+code --install-extension devstack-0.2.0.vsix
 ```
 
 ## License
