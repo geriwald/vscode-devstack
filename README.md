@@ -19,25 +19,24 @@ Open a project. Click the DevStack icon in the activity bar. Click play on any d
 
 ### Custom services (optional)
 
-Create `.devstack.json` at the workspace root (or use the gear icon in the DevStack panel):
+DevStack auto-detects most things, but anything that's specific to your workflow — a one-off script, a project-local task, a meta-command like "rebuild this extension" — belongs in a `.devstack.json` at the workspace root (or use the gear icon in the DevStack panel to create one).
+
+This very repo dogfoods its own config. The [.devstack.json](.devstack.json) checked in here defines a single "Reload Extension" service that repackages the `.vsix` and reinstalls it, so iterating on DevStack is one click in DevStack itself:
 
 ```json
 {
   "services": [
     {
-      "name": "My Custom API",
-      "role": "backend",
-      "command": "./scripts/start-api.sh",
-      "cwd": "backend"
+      "name": "Reload Extension",
+      "role": "other",
+      "command": "rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
     }
   ],
-  "disable": ["npm run dev"]
+  "disable": []
 }
 ```
 
-Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`.
-
-This repo dogfoods its own config: see [.devstack.json](.devstack.json) for a real example — a one-click "Reload Extension" service that repackages the `.vsix` and reinstalls it, so you can iterate on the extension without leaving VS Code.
+Each entry under `services` accepts `name`, `role`, `command`, and an optional `cwd` (relative to the workspace root). Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`. Use `disable` to hide auto-detected services by name.
 
 ## Build from source
 
