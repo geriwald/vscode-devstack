@@ -44,7 +44,7 @@ Each entry under `services` accepts `name`, `role`, `command`, and an optional `
 npm install
 npx tsc -p ./
 npx @vscode/vsce package --allow-missing-repository
-code --install-extension devstack-0.2.0.vsix
+code --install-extension devstack-0.2.1.vsix
 ```
 
 ## License
