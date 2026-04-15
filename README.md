@@ -28,7 +28,7 @@ This very repo dogfoods its own config. The [.devstack.json](.devstack.json) che
   "services": [
     {
       "name": "Reload Extension",
-      "role": "other",
+      "role": "infra",
       "command": "rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
     }
   ],
