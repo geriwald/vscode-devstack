@@ -104,8 +104,10 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
         const status = this.terminalManager.getStatus(s);
         const meta = getServiceMeta(s.command, s.tech);
         const detectedPort = this.terminalManager.getDetectedPort(s);
-        const port = detectedPort ?? meta.defaultPort;
-        const url = (status === "running" && port) ? `http://localhost:${port}` : undefined;
+        const port = s.port ?? detectedPort ?? meta.defaultPort;
+        const url = status === "running"
+          ? (s.url ?? (port ? `http://localhost:${port}` : undefined))
+          : undefined;
 
         return {
           name: s.name,

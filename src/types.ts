@@ -17,6 +17,10 @@ export interface ServiceDefinition {
   tech?: string;
   /** Individual service names from docker-compose (for display as badges) */
   composeServices?: string[];
+  /** Override the port used to build the localhost URL */
+  port?: number;
+  /** Override the full URL shown when the service is running */
+  url?: string;
 }
 
 export interface DetectedStack {
