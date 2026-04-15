@@ -36,7 +36,7 @@ This very repo dogfoods its own config. The [.devstack.json](.devstack.json) che
 }
 ```
 
-Each entry under `services` accepts `name`, `role`, `command`, and an optional `cwd` (relative to the workspace root). Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`. Use `disable` to hide auto-detected services by name.
+Each entry under `services` accepts `name`, `role`, `command`, and optional `cwd` (relative to the workspace root), `port`, and `url`. Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`. `port` overrides the localhost port used to build the clickable link shown while the service runs; `url` overrides the full URL (useful for HTTPS, custom domains, or a sub-path). Use `disable` to hide auto-detected services by name.
 
 ## Build from source
 
