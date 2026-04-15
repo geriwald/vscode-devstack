@@ -25,6 +25,7 @@ const COMMAND_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
   { match: /manage\.py runserver/, meta: { defaultPort: 8000, mode: "dev", hotReload: true, modeLabel: "dev · auto reload" } },
   { match: /flask run.*--reload/, meta: { defaultPort: 5000, mode: "dev", hotReload: true, modeLabel: "dev · hot reload" } },
   { match: /flask run/, meta: { defaultPort: 5000, mode: "run", hotReload: false, modeLabel: "run" } },
+  { match: /python3?\s+\S+\.py/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
   // Rust
   { match: /cargo run/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
   { match: /cargo watch/, meta: { mode: "dev", hotReload: true, modeLabel: "dev · watch" } },
@@ -74,6 +75,7 @@ export const TECH_DESCRIPTIONS: Record<string, TechDescription> = {
   "FastAPI":          { description: "Python async web framework",           icon: "server",         color: "#009688" },
   "Django":           { description: "Python full-stack web framework",      icon: "server",         color: "#44B78B" },
   "Flask":            { description: "Python lightweight web framework",     icon: "server",         color: "#CCCCCC" },
+  "Python Script":    { description: "Standalone Python server script",      icon: "server",         color: "#3776AB" },
   "Rust":             { description: "Systems language, high performance",   icon: "server",         color: "#DEA584" },
   "Docker Compose":   { description: "Multi-container orchestration",        icon: "package",        color: "#2496ED" },
   "Makefile":         { description: "Task runner via make targets",         icon: "terminal",       color: "#6D8086" },
