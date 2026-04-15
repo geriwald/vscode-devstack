@@ -212,6 +212,52 @@ const detectPythonFastAPI: Detector = (root) => {
   return null;
 };
 
+const detectPythonScript: Detector = (root) => {
+  // Standalone "python server.py"-style apps: a script at the root that is
+  // either sitting next to an index.html, or imports a known web framework.
+  // Skipped when the project declares a framework in its packaging metadata
+  // (those cases are handled by detectPythonFastAPI and invoked via uvicorn /
+  // manage.py / flask run).
+  const candidates = ["server.py", "app.py", "main.py", "wsgi.py"];
+  const script = candidates.find((f) => fileExists(root, f));
+  if (!script) { return null; }
+
+  for (const f of ["requirements.txt", "pyproject.toml"]) {
+    const p = path.join(root, f);
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, "utf-8");
+      if (/fastapi|django|flask/i.test(content)) { return null; }
+    }
+  }
+
+  // Grep the script itself for a web-framework import — anchored at line
+  // start to avoid matching comments or strings deeper in the file.
+  const importsFramework = scriptImportsWebFramework(path.join(root, script));
+
+  // Accept either: (a) script + sibling index.html (static site server),
+  // or (b) script that imports a web framework (ad-hoc Flask/FastAPI/etc.).
+  if (!fileExists(root, "index.html") && !importsFramework) { return null; }
+
+  const venvBin = findVenvBin(root);
+  const python = venvBin ? path.join(venvBin, "python") : "python3";
+
+  return {
+    tech: "Python Script",
+    services: [
+      { name: `Python ${script}`, role: "backend", command: `${python} ${script}`, source: "auto" },
+    ],
+  };
+};
+
+function scriptImportsWebFramework(scriptPath: string): boolean {
+  try {
+    const content = fs.readFileSync(scriptPath, "utf-8");
+    return /^\s*(from|import)\s+(flask|fastapi|bottle|starlette|quart|sanic|aiohttp|tornado)\b/m.test(content);
+  } catch {
+    return false;
+  }
+}
+
 const detectRust: Detector = (root) => {
   if (!fileExists(root, "Cargo.toml")) { return null; }
   const cargo = fs.readFileSync(path.join(root, "Cargo.toml"), "utf-8");
@@ -463,6 +509,7 @@ const DETECTORS: Detector[] = [
   detectAngular,
   detectGo,
   detectPythonFastAPI,
+  detectPythonScript,
   detectRust,
   detectDockerCompose,
   detectMakefile,
