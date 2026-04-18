@@ -134,6 +134,9 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
     const jsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, "media", "main.js")
     );
+    const codiconCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, "media", "codicons", "codicon.css")
+    );
 
     // Build tech descriptions JSON for the webview
     const techDescriptions: Record<string, TechDescription> = {};
@@ -152,6 +155,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconCssUri}">
   <link rel="stylesheet" href="${cssUri}">
 </head>
 <body>
