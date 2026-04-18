@@ -32,8 +32,9 @@
         const desc = TECH_DESCRIPTIONS[tech];
         const color = desc ? desc.color : "var(--vscode-foreground)";
         const description = desc ? desc.description : "";
+        const iconName = desc && desc.icon ? desc.icon : "circle-filled";
         html += '<div class="tech-item">';
-        html += '  <span class="tech-icon" style="color:' + color + '">&#x25CF;</span>';
+        html += '  <i class="tech-icon codicon codicon-' + escapeHtml(iconName) + '" style="color:' + color + '"></i>';
         html += '  <span class="tech-name">' + escapeHtml(tech) + '</span>';
         html += '  <span class="tech-desc">' + escapeHtml(description) + '</span>';
         html += '</div>';
