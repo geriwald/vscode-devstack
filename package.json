@@ -2,7 +2,7 @@
   "name": "devstack",
   "displayName": "DevStack Launcher",
   "description": "Auto-detect your project's tech stack and launch services from the activity bar",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "geriwald",
   "license": "MIT",
   "icon": "resources/icon.png",
