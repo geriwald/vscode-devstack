@@ -166,25 +166,34 @@ const detectPythonFastAPI: Detector = (root) => {
 
   // Discover the uvicorn app entry point.
   // Prefer pyproject.toml [project.scripts] entry (handles packages with relative imports).
-  // Fall back to main:app or app:app for simple single-file projects.
+  // Fall back to scanning the root and common app subdirectories for a FastAPI module.
   const pyprojectEntry = discoverFastAPIEntry(root);
   let appEntry: string;
+  let appDir: string | null = null;
   let needsPackageRoot = false;
 
   if (pyprojectEntry) {
     // Entry like "webapp.backend.main:app" — must be launched from the package root
     appEntry = pyprojectEntry;
     needsPackageRoot = pyprojectEntry.includes(".");
-  } else if (fileExists(root, "main.py")) {
-    appEntry = "main:app";
-  } else if (fileExists(root, "app.py")) {
-    appEntry = "app:app";
   } else {
-    appEntry = "main:app";
+    const found = findFastAPIModule(root);
+    if (found) {
+      appEntry = found.entry;
+      appDir = found.dir;
+    } else {
+      appEntry = "main:app";
+    }
   }
 
   if (hasFastAPI) {
-    const cmd = fileExists(root, "Makefile") ? "make run" : `${uvicorn} ${appEntry} --reload --port 8000`;
+    let cmd: string;
+    if (fileExists(root, "Makefile")) {
+      cmd = "make run";
+    } else {
+      const appDirFlag = appDir ? ` --app-dir ${appDir}` : "";
+      cmd = `${uvicorn} ${appEntry}${appDirFlag} --reload --port 8000`;
+    }
     const svc: ServiceDefinition = { name: "FastAPI Server", role: "backend", command: cmd, source: "auto" };
     // When entry is a dotted module path, cwd must stay at the workspace root
     if (needsPackageRoot) { svc.cwd = ""; }
@@ -395,6 +404,42 @@ function findVenvBin(startDir: string): string | null {
     dir = path.dirname(dir);
   }
   return null;
+}
+
+/**
+ * Locate a FastAPI `app = FastAPI(...)` module on disk.
+ * Checks the root first, then common subdirectories (web, app, backend, src, api, server).
+ * Returns `{ entry, dir }` where entry is "<stem>:<var>" and dir is the relative folder
+ * to pass to `uvicorn --app-dir` (null when the module sits at the workspace root).
+ */
+function findFastAPIModule(root: string): { entry: string; dir: string | null } | null {
+  const SUBDIRS = ["", "web", "app", "backend", "src", "api", "server"];
+  const FILES = ["main.py", "app.py", "server.py", "asgi.py"];
+
+  for (const sub of SUBDIRS) {
+    const dir = sub ? path.join(root, sub) : root;
+    if (sub && !fs.existsSync(dir)) { continue; }
+    for (const file of FILES) {
+      const full = path.join(dir, file);
+      if (!fs.existsSync(full)) { continue; }
+      const varName = findFastAPIVar(full);
+      if (!varName) { continue; }
+      const stem = file.replace(/\.py$/, "");
+      return { entry: `${stem}:${varName}`, dir: sub || null };
+    }
+  }
+  return null;
+}
+
+/** Scan a Python file for `<var> = FastAPI(...)` and return the variable name, or null. */
+function findFastAPIVar(filepath: string): string | null {
+  try {
+    const content = fs.readFileSync(filepath, "utf-8");
+    const match = content.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*FastAPI\s*\(/m);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Try to extract the FastAPI app entry point from pyproject.toml [project.scripts]. */
