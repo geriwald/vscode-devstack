@@ -17,9 +17,15 @@ export class TerminalManager implements vscode.Disposable {
   private readonly onStatusChangeEmitter = new vscode.EventEmitter<ServiceDefinition>();
   public readonly onStatusChange = this.onStatusChangeEmitter.event;
   private disposables: vscode.Disposable[] = [];
+  private readonly out = vscode.window.createOutputChannel("DevStack");
 
   /** Regex to match localhost URLs in terminal output (strips ANSI escape codes) */
   private static readonly URL_PATTERN = /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d+)/;
+
+  private log(msg: string): void {
+    const ts = new Date().toISOString().slice(11, 23);
+    this.out.appendLine(`[${ts}] ${msg}`);
+  }
 
   constructor() {
     // Track terminal closures
@@ -128,7 +134,11 @@ export class TerminalManager implements vscode.Disposable {
    * When shell integration is available, reads stdout to detect localhost URLs.
    */
   private sendCommandWhenReady(terminal: vscode.Terminal, command: string, serviceKey: string): void {
+    const t0 = Date.now();
+    this.log(`[${serviceKey}] sendCommandWhenReady; shellIntegration available immediately=${!!terminal.shellIntegration}`);
+
     if (terminal.shellIntegration) {
+      this.log(`[${serviceKey}] sending via executeCommand (immediate, +${Date.now() - t0}ms)`);
       const execution = terminal.shellIntegration.executeCommand(command);
       this.readOutputStream(execution, serviceKey);
       return;
@@ -140,6 +150,7 @@ export class TerminalManager implements vscode.Disposable {
       if (t === terminal && !sent) {
         sent = true;
         listener.dispose();
+        this.log(`[${serviceKey}] onDidChangeTerminalShellIntegration fired after ${Date.now() - t0}ms; sending via executeCommand`);
         const execution = shellIntegration.executeCommand(command);
         this.readOutputStream(execution, serviceKey);
       }
@@ -149,6 +160,7 @@ export class TerminalManager implements vscode.Disposable {
       if (!sent) {
         sent = true;
         listener.dispose();
+        this.log(`[${serviceKey}] FALLBACK after ${Date.now() - t0}ms (no shellIntegration event); using sendText`);
         terminal.sendText(command);
         // No stream reading available without shell integration
       }
@@ -182,6 +194,7 @@ export class TerminalManager implements vscode.Disposable {
   dispose(): void {
     this.stopAll();
     this.onStatusChangeEmitter.dispose();
+    this.out.dispose();
     for (const d of this.disposables) { d.dispose(); }
   }
 }
