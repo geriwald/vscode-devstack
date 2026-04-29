@@ -3,7 +3,7 @@
     {
       "name": "Reload Extension",
       "role": "infra",
-      "command": "rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
+      "command": "npm run compile && rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
     }
   ],
   "disable": []
