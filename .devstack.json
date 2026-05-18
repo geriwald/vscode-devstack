@@ -6,5 +6,16 @@
       "command": "npm run compile && rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
     }
   ],
+  "scripts": [
+    {
+      "name": "List source files",
+      "command": "ls -la src/",
+      "description": "Quick directory listing of the TypeScript sources"
+    },
+    {
+      "name": "Compile once",
+      "command": "npx tsc -p ./"
+    }
+  ],
   "disable": []
 }
