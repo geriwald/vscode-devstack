@@ -38,13 +38,35 @@ This very repo dogfoods its own config. The [.devstack.json](.devstack.json) che
 
 Each entry under `services` accepts `name`, `role`, `command`, and optional `cwd` (relative to the workspace root), `port`, and `url`. Valid roles: `frontend`, `backend`, `database`, `infra`, `fullstack`, `other`. `port` overrides the localhost port used to build the clickable link shown while the service runs; `url` overrides the full URL (useful for HTTPS, custom domains, or a sub-path). Use `disable` to hide auto-detected services by name.
 
+### Scripts (one-shot commands)
+
+Services model long-running processes (dev servers, watchers) with a start/stop lifecycle. For one-shot interactive REPLs, batch jobs, or anything that's meant to *finish*, use the `scripts` array instead. Scripts render in a dedicated **Scripts** section in the sidebar with a single Run action — no status indicator, no stop button, no URL handling. Each click opens a fresh terminal; concurrent runs are independent.
+
+```json
+{
+  "scripts": [
+    {
+      "name": "Scan documents",
+      "command": "bin/docpipe-scan",
+      "description": "Duplex scan loop → ~/Scans/raw/"
+    },
+    {
+      "name": "Compile once",
+      "command": "npx tsc -p ./"
+    }
+  ]
+}
+```
+
+Each entry under `scripts` accepts `name`, `command`, and optional `description` (one-line subtitle) and `cwd` (relative to the workspace root). Scripts are config-only — there is no auto-detection of `bin/` or `scripts/` entry points in this iteration.
+
 ## Build from source
 
 ```bash
 npm install
 npx tsc -p ./
 npx @vscode/vsce package --allow-missing-repository
-code --install-extension devstack-0.2.1.vsix
+code --install-extension devstack-0.4.0.vsix
 ```
 
 ## License
