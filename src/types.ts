@@ -30,9 +30,24 @@ export interface DetectedStack {
   services: ServiceDefinition[];
 }
 
+export interface ScriptDefinition {
+  /** Display name in the sidebar */
+  name: string;
+  /** Shell command to execute */
+  command: string;
+  /** Optional one-line subtitle under the name */
+  description?: string;
+  /** Working dir, relative to workspace root. Defaults to root. */
+  cwd?: string;
+  /** Optional sub-grouping label (reserved for future UI use) */
+  group?: string;
+}
+
 export interface DevStackConfig {
   /** Override or add services manually */
   services?: Array<Omit<ServiceDefinition, "source">>;
+  /** One-shot scripts (config-only, no auto-detection) */
+  scripts?: ScriptDefinition[];
   /** Disable auto-detected services by name */
   disable?: string[];
 }

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ServiceDefinition, ServiceRole, ServiceStatus, ROLE_LABELS, ROLE_ORDER, TechDescription } from "./types";
+import { ScriptDefinition, ServiceDefinition, ServiceRole, ServiceStatus, ROLE_LABELS, ROLE_ORDER, TechDescription } from "./types";
 import { TerminalManager } from "./terminalManager";
 import { getServiceMeta, TECH_DESCRIPTIONS } from "./serviceMeta";
 
@@ -17,6 +17,13 @@ interface WebviewState {
     role: ServiceRole;
     composeServices?: string[];
   }>>;
+  scripts: Array<{
+    name: string;
+    command: string;
+    description?: string;
+    cwd?: string;
+    group?: string;
+  }>;
 }
 
 export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
@@ -25,6 +32,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private services: ServiceDefinition[] = [];
   private techs: string[] = [];
+  private scripts: ScriptDefinition[] = [];
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -64,6 +72,14 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
           vscode.env.openExternal(vscode.Uri.parse(message.url));
           break;
         }
+        case "runScript": {
+          const script = this.scripts.find((s) => s.name === message.name);
+          if (script) {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (root) { this.terminalManager.runOneShot(script, root); }
+          }
+          break;
+        }
       }
     });
 
@@ -71,15 +87,16 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
 
     // Send current state once the webview is ready
     // (setServices may have been called before the view was resolved)
-    if (this.services.length > 0) {
+    if (this.services.length > 0 || this.scripts.length > 0) {
       const state = this.buildState();
       webviewView.webview.postMessage({ type: "update", state });
     }
   }
 
-  setServices(services: ServiceDefinition[], techs: string[]): void {
+  setServices(services: ServiceDefinition[], techs: string[], scripts: ScriptDefinition[] = []): void {
     this.services = services;
     this.techs = techs;
+    this.scripts = scripts;
     this.updateWebview();
   }
 
@@ -124,7 +141,15 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
       });
     }
 
-    return { techs: this.techs, servicesByRole };
+    const scripts = this.scripts.map((s) => ({
+      name: s.name,
+      command: s.command,
+      description: s.description,
+      cwd: s.cwd,
+      group: s.group,
+    }));
+
+    return { techs: this.techs, servicesByRole, scripts };
   }
 
   private getHtml(webview: vscode.Webview): string {

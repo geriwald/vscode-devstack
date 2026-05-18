@@ -44,7 +44,8 @@
 
     // Services grouped by role
     const roles = Object.keys(state.servicesByRole);
-    if (roles.length === 0 && (!state.techs || state.techs.length === 0)) {
+    const hasScripts = state.scripts && state.scripts.length > 0;
+    if (roles.length === 0 && !hasScripts && (!state.techs || state.techs.length === 0)) {
       html += '<div class="empty-state">No services detected.<br>Open a project with a recognized tech stack.</div>';
     }
 
@@ -117,6 +118,36 @@
       html += '</div>';
     }
 
+    // Scripts section (one-shot commands) — rendered after services, hidden when empty
+    if (hasScripts) {
+      html += '<div class="role-section scripts-section">';
+      html += '  <div class="role-header" data-role="__scripts">';
+      html += '    <span class="role-chevron">&#x25BC;</span>';
+      html += '    <span class="role-label">Scripts</span>';
+      html += '    <span class="role-count">(' + state.scripts.length + ')</span>';
+      html += '  </div>';
+      html += '  <div class="role-services" data-role-services="__scripts">';
+
+      for (const script of state.scripts) {
+        html += '<div class="service-item script-item">';
+        html += '  <div class="service-row">';
+        html += '    <span class="script-icon codicon codicon-terminal"></span>';
+        html += '    <span class="service-name">' + escapeHtml(script.name) + '</span>';
+        html += '    <button class="service-action script-run" data-action="runScript" data-name="' + escapeHtml(script.name) + '" title="Run">&#x25B6;</button>';
+        html += '  </div>';
+        html += '  <div class="service-details">';
+        if (script.description) {
+          html += '    <div class="script-description">' + escapeHtml(script.description) + '</div>';
+        }
+        html += '    <div class="service-command">' + escapeHtml(script.command) + '</div>';
+        html += '  </div>';
+        html += '</div>';
+      }
+
+      html += '  </div>';
+      html += '</div>';
+    }
+
     root.innerHTML = html;
     attachListeners();
   }
@@ -135,7 +166,11 @@
         const action = btn.getAttribute("data-action");
         const name = btn.getAttribute("data-name");
         const role = btn.getAttribute("data-role");
-        vscode.postMessage({ command: action, name, role });
+        if (action === "runScript") {
+          vscode.postMessage({ command: "runScript", name });
+        } else {
+          vscode.postMessage({ command: action, name, role });
+        }
       });
     });
 

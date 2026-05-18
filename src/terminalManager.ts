@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ServiceDefinition, ServiceStatus } from "./types";
+import { ScriptDefinition, ServiceDefinition, ServiceStatus } from "./types";
 
 interface ManagedTerminal {
   terminal: vscode.Terminal;
@@ -117,6 +117,24 @@ export class TerminalManager implements vscode.Disposable {
     managed.status = "stopped";
     this.onStatusChangeEmitter.fire(service);
     this.terminals.delete(key);
+  }
+
+  /**
+   * Run a one-shot script in a fresh terminal. No tracking, no status, no stop.
+   * Each call creates a new terminal — runs are independent.
+   */
+  runOneShot(script: ScriptDefinition, workspaceRoot: string): void {
+    const cwd = script.cwd
+      ? vscode.Uri.file(`${workspaceRoot}/${script.cwd}`)
+      : vscode.Uri.file(workspaceRoot);
+
+    const terminal = vscode.window.createTerminal({
+      name: `[DevStack] ${script.name}`,
+      cwd,
+      iconPath: new vscode.ThemeIcon("terminal"),
+    });
+    terminal.show();
+    terminal.sendText(script.command);
   }
 
   stopAll(): void {

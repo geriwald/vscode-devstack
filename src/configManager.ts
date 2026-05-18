@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { DevStackConfig, ServiceDefinition } from "./types";
+import { DevStackConfig, ScriptDefinition, ServiceDefinition } from "./types";
 
 const CONFIG_FILENAME = ".devstack.json";
 
@@ -49,6 +49,13 @@ export function mergeServices(
   }
 
   return Array.from(result.values());
+}
+
+/**
+ * Extract scripts from config. Returns an empty array if none are defined.
+ */
+export function loadScripts(config: DevStackConfig): ScriptDefinition[] {
+  return config.scripts ?? [];
 }
 
 /**

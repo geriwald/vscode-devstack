@@ -236,6 +236,29 @@ body {
   color: var(--vscode-textLink-activeForeground);
 }
 
+/* --- Scripts section --- */
+
+.script-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.script-description {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  margin-bottom: 2px;
+}
+
+.script-run {
+  color: var(--vscode-foreground);
+}
+
 /* --- Empty state --- */
 
 .empty-state {

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { detectStacks, deduplicateServices } from "./stackDetector";
-import { loadConfig, mergeServices, editConfig } from "./configManager";
+import { loadConfig, loadScripts, mergeServices, editConfig } from "./configManager";
 import { TerminalManager } from "./terminalManager";
 import { DevStackWebviewProvider } from "./webviewProvider";
 
@@ -50,7 +50,7 @@ function getWorkspaceRoot(): string | undefined {
 function scanAndRefresh(webviewProvider: DevStackWebviewProvider): void {
   const root = getWorkspaceRoot();
   if (!root) {
-    webviewProvider.setServices([], []);
+    webviewProvider.setServices([], [], []);
     return;
   }
 
@@ -60,8 +60,9 @@ function scanAndRefresh(webviewProvider: DevStackWebviewProvider): void {
 
   const config = loadConfig(root);
   const services = mergeServices(autoServices, config);
+  const scripts = loadScripts(config);
 
-  webviewProvider.setServices(services, techs);
+  webviewProvider.setServices(services, techs, scripts);
 }
 
 export function deactivate(): void {
