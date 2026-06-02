@@ -31,8 +31,12 @@ export function mergeServices(
 ): ServiceDefinition[] {
   const disabled = new Set(config.disable ?? []);
 
-  // Filter out disabled auto-detected services
-  const filtered = autoDetected.filter((s) => !disabled.has(s.name));
+  // Filter out disabled auto-detected services. Match against the display name
+  // OR the intrinsic (pre-suffix) name, so a subdir-detected service can be
+  // disabled by either "FastAPI Server" or "FastAPI Server (vision)".
+  const filtered = autoDetected.filter(
+    (s) => !disabled.has(s.name) && !(s.intrinsicName !== undefined && disabled.has(s.intrinsicName))
+  );
 
   // Add config services (override if same name)
   const configServices: ServiceDefinition[] = (config.services ?? []).map((s) => ({
