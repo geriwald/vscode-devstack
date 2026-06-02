@@ -1,20 +1,39 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { parse as parseJsonc, ParseError, printParseErrorCode } from "jsonc-parser";
 import { DevStackConfig, ScriptDefinition, ServiceDefinition } from "./types";
 
 const CONFIG_FILENAME = ".devstack.json";
 
 /**
+ * Parse .devstack.json as JSONC (comments and trailing commas tolerated, like
+ * VS Code's own settings.json). Returns undefined if the file is absent;
+ * throws if it exists but is genuinely unparseable, so callers never silently
+ * overwrite a config they could not read.
+ */
+function readConfig(configPath: string): DevStackConfig | undefined {
+  if (!fs.existsSync(configPath)) {
+    return undefined;
+  }
+  const errors: ParseError[] = [];
+  const parsed = parseJsonc(fs.readFileSync(configPath, "utf-8"), errors);
+  if (errors.length > 0) {
+    const first = errors[0];
+    throw new Error(
+      `${CONFIG_FILENAME} is invalid: ${printParseErrorCode(first.error)} at offset ${first.offset}`
+    );
+  }
+  return (parsed as DevStackConfig) ?? {};
+}
+
+/**
  * Load user-defined service overrides from .devstack.json at workspace root.
+ * Best-effort: an unreadable config yields {} so detection still proceeds.
  */
 export function loadConfig(workspaceRoot: string): DevStackConfig {
-  const configPath = path.join(workspaceRoot, CONFIG_FILENAME);
-  if (!fs.existsSync(configPath)) {
-    return {};
-  }
   try {
-    return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    return readConfig(path.join(workspaceRoot, CONFIG_FILENAME)) ?? {};
   } catch {
     return {};
   }
@@ -69,7 +88,9 @@ export function loadScripts(config: DevStackConfig): ScriptDefinition[] {
  */
 export function addToDisable(workspaceRoot: string, key: string): void {
   const configPath = path.join(workspaceRoot, CONFIG_FILENAME);
-  const config = loadConfig(workspaceRoot);
+  // readConfig throws on an unparseable file, so a broken config is never
+  // clobbered with a minimal rewrite. An absent file becomes a fresh {}.
+  const config = readConfig(configPath) ?? {};
   const disable = config.disable ?? [];
   if (!disable.includes(key)) {
     disable.push(key);

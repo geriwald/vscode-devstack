@@ -88,7 +88,17 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
           // " (subdir)" suffix), else the plain name. The .devstack.json watcher
           // triggers a rescan, so the service disappears without an explicit refresh.
           const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-          if (root) { addToDisable(root, message.intrinsicName || message.name); }
+          if (root) {
+            try {
+              addToDisable(root, message.intrinsicName || message.name);
+            } catch (err) {
+              // A malformed .devstack.json is left untouched; surface the reason
+              // rather than silently overwriting the user's config.
+              vscode.window.showErrorMessage(
+                `DevStack: could not hide service — ${err instanceof Error ? err.message : String(err)}`
+              );
+            }
+          }
           break;
         }
       }
