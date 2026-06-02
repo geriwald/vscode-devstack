@@ -1,0 +1,27 @@
+{
+  "//": "Copy to launch.json (gitignored). The DEBUG config enables the proposed onDidWriteTerminalData API and opens the Python fixture with DEVSTACK_DEBUG=1, so the 'DevStack Debug' output channel dumps raw terminal writes. See docs/specs/2026-05-31-venv-startup-delay-design.md.",
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "${defaultBuildTask}"
+    },
+    {
+      "name": "Run Extension (DEBUG terminal capture)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--enable-proposed-api=geriwald.devstack",
+        "${workspaceFolder}/fixtures/python-venv"
+      ],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "env": { "DEVSTACK_DEBUG": "1" },
+      "preLaunchTask": "${defaultBuildTask}"
+    }
+  ]
+}

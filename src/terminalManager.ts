@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ScriptDefinition, ServiceDefinition, ServiceStatus } from "./types";
+import { TerminalDebugRecorder } from "./terminalDebug";
 
 interface ManagedTerminal {
   terminal: vscode.Terminal;
@@ -17,15 +18,10 @@ export class TerminalManager implements vscode.Disposable {
   private readonly onStatusChangeEmitter = new vscode.EventEmitter<ServiceDefinition>();
   public readonly onStatusChange = this.onStatusChangeEmitter.event;
   private disposables: vscode.Disposable[] = [];
-  private readonly out = vscode.window.createOutputChannel("DevStack");
+  private readonly debug = new TerminalDebugRecorder();
 
   /** Regex to match localhost URLs in terminal output (strips ANSI escape codes) */
   private static readonly URL_PATTERN = /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d+)/;
-
-  private log(msg: string): void {
-    const ts = new Date().toISOString().slice(11, 23);
-    this.out.appendLine(`[${ts}] ${msg}`);
-  }
 
   constructor() {
     // Track terminal closures
@@ -89,14 +85,22 @@ export class TerminalManager implements vscode.Disposable {
       name: `[DevStack] ${service.name}`,
       cwd,
       iconPath: new vscode.ThemeIcon("server-process"),
+      // hideFromUser opts this terminal out of the Python extension's terminal
+      // auto-activation (it skips terminals created with hideFromUser). That
+      // activation typed `source .venv/bin/activate` + Ctrl+C into the terminal,
+      // killing our already-started process intermittently and adding a startup
+      // delay. We don't need it: detected commands already use the venv's
+      // absolute interpreter path (see findVenvBin in stackDetector.ts).
+      hideFromUser: true,
     });
 
+    this.debug.track(terminal, `service:${service.name}`);
     terminal.show();
 
-    // Wait for shell integration to be ready before sending the command.
-    // This lets VS Code extensions (e.g. Python venv auto-activation) finish
-    // their shell setup. Without this, they can send Ctrl+C which kills our process.
-    this.sendCommandWhenReady(terminal, service.command, key);
+    // Send immediately. No venv activation will interfere (hideFromUser above),
+    // so there is nothing to wait for. Still read the output stream when shell
+    // integration is available, to detect the localhost URL — but never block on it.
+    this.sendCommand(terminal, service.command, key);
 
     const managed: ManagedTerminal = { terminal, service, status: "running" };
     this.terminals.set(key, managed);
@@ -132,7 +136,9 @@ export class TerminalManager implements vscode.Disposable {
       name: `[DevStack] ${script.name}`,
       cwd,
       iconPath: new vscode.ThemeIcon("terminal"),
+      hideFromUser: true, // opt out of Python venv auto-activation — see start()
     });
+    this.debug.track(terminal, `script:${script.name}`);
     terminal.show();
     terminal.sendText(script.command);
   }
@@ -146,43 +152,24 @@ export class TerminalManager implements vscode.Disposable {
   }
 
   /**
-   * Send a command to a terminal, waiting for shell integration if available.
-   * Uses executeCommand (which waits for prompt) instead of sendText.
-   * Falls back to sendText after 3s if shell integration never activates.
-   * When shell integration is available, reads stdout to detect localhost URLs.
+   * Send a command to a terminal immediately, without waiting for shell
+   * integration. The terminal is created with hideFromUser, so the Python
+   * extension does not inject venv activation — there is nothing to wait for.
+   *
+   * Shell integration is used opportunistically, only to detect the localhost
+   * URL (port badge): if it is already available we read its stream; otherwise
+   * we send via sendText and skip port detection. We never delay the command.
    */
-  private sendCommandWhenReady(terminal: vscode.Terminal, command: string, serviceKey: string): void {
-    const t0 = Date.now();
-    this.log(`[${serviceKey}] sendCommandWhenReady; shellIntegration available immediately=${!!terminal.shellIntegration}`);
-
+  private sendCommand(terminal: vscode.Terminal, command: string, serviceKey: string): void {
     if (terminal.shellIntegration) {
-      this.log(`[${serviceKey}] sending via executeCommand (immediate, +${Date.now() - t0}ms)`);
       const execution = terminal.shellIntegration.executeCommand(command);
       this.readOutputStream(execution, serviceKey);
       return;
     }
 
-    let sent = false;
-
-    const listener = vscode.window.onDidChangeTerminalShellIntegration(({ terminal: t, shellIntegration }) => {
-      if (t === terminal && !sent) {
-        sent = true;
-        listener.dispose();
-        this.log(`[${serviceKey}] onDidChangeTerminalShellIntegration fired after ${Date.now() - t0}ms; sending via executeCommand`);
-        const execution = shellIntegration.executeCommand(command);
-        this.readOutputStream(execution, serviceKey);
-      }
-    });
-
-    setTimeout(() => {
-      if (!sent) {
-        sent = true;
-        listener.dispose();
-        this.log(`[${serviceKey}] FALLBACK after ${Date.now() - t0}ms (no shellIntegration event); using sendText`);
-        terminal.sendText(command);
-        // No stream reading available without shell integration
-      }
-    }, 3000);
+    // Send now; we can't read the stream without shell integration, so port
+    // detection is best-effort and simply absent here.
+    terminal.sendText(command);
   }
 
   /**
@@ -212,7 +199,7 @@ export class TerminalManager implements vscode.Disposable {
   dispose(): void {
     this.stopAll();
     this.onStatusChangeEmitter.dispose();
-    this.out.dispose();
+    this.debug.dispose();
     for (const d of this.disposables) { d.dispose(); }
   }
 }

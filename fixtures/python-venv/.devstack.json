@@ -1,0 +1,10 @@
+{
+  "services": [
+    {
+      "name": "Python HTTP server",
+      "role": "backend",
+      "command": "python app.py",
+      "tech": "Python"
+    }
+  ]
+}
