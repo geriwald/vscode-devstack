@@ -184,6 +184,46 @@ body {
   background: var(--vscode-toolbar-hoverBackground);
 }
 
+/* Gear (config) / hide (auto) buttons — same treatment as service-action,
+   revealed on hover so they don't clutter the row at rest. */
+.service-icon-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.service-item:hover .service-icon-btn {
+  opacity: 1;
+}
+
+.service-icon-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+
+/* Small "config" tag marking a manually-defined service. */
+.source-badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
 .service-details {
   padding: 2px 0 2px 22px;
   font-size: 0.9em;

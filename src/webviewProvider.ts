@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { ScriptDefinition, ServiceDefinition, ServiceRole, ServiceStatus, ROLE_LABELS, ROLE_ORDER, TechDescription } from "./types";
 import { TerminalManager } from "./terminalManager";
 import { getServiceMeta, TECH_DESCRIPTIONS } from "./serviceMeta";
+import { addToDisable, editConfig } from "./configManager";
 
 interface WebviewState {
   techs: string[];
@@ -16,6 +17,8 @@ interface WebviewState {
     url?: string;
     role: ServiceRole;
     composeServices?: string[];
+    source: "auto" | "config";
+    intrinsicName?: string;
   }>>;
   scripts: Array<{
     name: string;
@@ -80,6 +83,19 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
           }
           break;
         }
+        case "editConfig": {
+          const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+          if (root) { editConfig(root); }
+          break;
+        }
+        case "hideService": {
+          // Write the intrinsic name when present (intuitive, stable across the
+          // " (subdir)" suffix), else the plain name. The .devstack.json watcher
+          // triggers a rescan, so the service disappears without an explicit refresh.
+          const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+          if (root) { addToDisable(root, message.intrinsicName || message.name); }
+          break;
+        }
       }
     });
 
@@ -137,6 +153,8 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
           url,
           role: s.role,
           composeServices: s.composeServices,
+          source: s.source,
+          intrinsicName: s.intrinsicName,
         };
       });
     }

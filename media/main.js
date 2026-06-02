@@ -71,10 +71,23 @@
         const actionCmd = (isRunning || isError) ? "stop" : "start";
         const actionTitle = (isRunning || isError) ? "Stop" : "Start";
 
+        const isConfig = svc.source === "config";
+
         html += '<div class="service-item">';
         html += '  <div class="service-row">';
         html += '    <span class="service-status ' + statusClass + '">' + statusIcon + '</span>';
         html += '    <span class="service-name">' + escapeHtml(svc.name) + '</span>';
+        if (isConfig) {
+          html += '    <span class="source-badge" title="Defined in .devstack.json">config</span>';
+        }
+        // Source affordance: gear opens the config for manual services; hide
+        // suppresses an auto-detected one by writing its name to `disable`.
+        if (isConfig) {
+          html += '    <button class="service-icon-btn" data-action="editConfig" title="Edit in .devstack.json"><i class="codicon codicon-gear"></i></button>';
+        } else {
+          const intrinsic = svc.intrinsicName ? ' data-intrinsic="' + escapeHtml(svc.intrinsicName) + '"' : "";
+          html += '    <button class="service-icon-btn" data-action="hideService" data-name="' + escapeHtml(svc.name) + '"' + intrinsic + ' title="Hide (add to disable)"><i class="codicon codicon-eye-closed"></i></button>';
+        }
         html += '    <button class="service-action" data-action="' + actionCmd + '" data-name="' + escapeHtml(svc.name) + '" data-role="' + svc.role + '" title="' + actionTitle + '">' + actionIcon + '</button>';
         html += '  </div>';
         html += '  <div class="service-details">';
@@ -170,6 +183,24 @@
           vscode.postMessage({ command: "runScript", name });
         } else {
           vscode.postMessage({ command: action, name, role });
+        }
+      });
+    });
+
+    // Source affordances: gear (edit config) and hide (add to disable)
+    document.querySelectorAll(".service-icon-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const action = btn.getAttribute("data-action");
+        if (action === "editConfig") {
+          vscode.postMessage({ command: "editConfig" });
+        } else if (action === "hideService") {
+          vscode.postMessage({
+            command: "hideService",
+            name: btn.getAttribute("data-name"),
+            intrinsicName: btn.getAttribute("data-intrinsic") || undefined,
+          });
         }
       });
     });
