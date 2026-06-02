@@ -63,6 +63,22 @@ export function loadScripts(config: DevStackConfig): ScriptDefinition[] {
 }
 
 /**
+ * Add a service name to the `disable` array in .devstack.json, creating the
+ * file if needed. Idempotent: a name already present is left untouched.
+ * Existing config keys are preserved.
+ */
+export function addToDisable(workspaceRoot: string, key: string): void {
+  const configPath = path.join(workspaceRoot, CONFIG_FILENAME);
+  const config = loadConfig(workspaceRoot);
+  const disable = config.disable ?? [];
+  if (!disable.includes(key)) {
+    disable.push(key);
+  }
+  config.disable = disable;
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+}
+
+/**
  * Create a default .devstack.json if it doesn't exist, then open it.
  */
 export async function editConfig(workspaceRoot: string): Promise<void> {
