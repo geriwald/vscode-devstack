@@ -3,8 +3,15 @@ export type ServiceRole = "frontend" | "backend" | "database" | "infra" | "fulls
 export type ServiceStatus = "stopped" | "running" | "error";
 
 export interface ServiceDefinition {
-  /** Display name */
+  /** Display name (may include a " (subdir)" suffix for nested detection) */
   name: string;
+  /**
+   * Intrinsic name as emitted by the detector, before any " (subdir)" suffix.
+   * Used to match `disable` entries so users can disable by the name they see
+   * in the detector, not the suffixed display name. Absent for root services
+   * (where name is already intrinsic) and config services.
+   */
+  intrinsicName?: string;
   /** Role category for grouping */
   role: ServiceRole;
   /** Shell command to start the service */

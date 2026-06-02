@@ -31,6 +31,9 @@ export function detectStacks(workspaceRoot: string): DetectedStack[] {
           services: result.services.map((svc) => ({
             ...svc,
             name: `${svc.name} (${rel})`,
+            // Keep the pre-suffix name so `disable` can match it (the suffix is
+            // a display concern, not part of the matching key).
+            intrinsicName: svc.name,
             cwd: svc.cwd !== undefined ? svc.cwd : rel,
           })),
         };
