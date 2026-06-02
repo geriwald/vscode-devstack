@@ -80,11 +80,10 @@
         if (isConfig) {
           html += '    <span class="source-badge" title="Defined in .devstack.json">config</span>';
         }
-        // Source affordance: gear opens the config for manual services; hide
-        // suppresses an auto-detected one by writing its name to `disable`.
-        if (isConfig) {
-          html += '    <button class="service-icon-btn" data-action="editConfig" title="Edit in .devstack.json"><i class="codicon codicon-gear"></i></button>';
-        } else {
+        // Hide affordance for auto-detected services: write their name to
+        // `disable`. Manual services are edited via the panel's title-bar gear
+        // (devstack.editConfig), so no per-service gear here.
+        if (!isConfig) {
           const intrinsic = svc.intrinsicName ? ' data-intrinsic="' + escapeHtml(svc.intrinsicName) + '"' : "";
           html += '    <button class="service-icon-btn" data-action="hideService" data-name="' + escapeHtml(svc.name) + '"' + intrinsic + ' title="Hide (add to disable)"><i class="codicon codicon-eye-closed"></i></button>';
         }
@@ -187,15 +186,12 @@
       });
     });
 
-    // Source affordances: gear (edit config) and hide (add to disable)
+    // Hide button: add an auto-detected service to `disable`.
     document.querySelectorAll(".service-icon-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        const action = btn.getAttribute("data-action");
-        if (action === "editConfig") {
-          vscode.postMessage({ command: "editConfig" });
-        } else if (action === "hideService") {
+        if (btn.getAttribute("data-action") === "hideService") {
           vscode.postMessage({
             command: "hideService",
             name: btn.getAttribute("data-name"),

@@ -184,8 +184,8 @@ body {
   background: var(--vscode-toolbar-hoverBackground);
 }
 
-/* Gear (config) / hide (auto) buttons — same treatment as service-action,
-   revealed on hover so they don't clutter the row at rest. */
+/* Hide (auto) button — same treatment as service-action, revealed on hover
+   so it doesn't clutter the row at rest. */
 .service-icon-btn {
   width: 22px;
   height: 22px;
