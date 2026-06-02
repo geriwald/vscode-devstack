@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { ScriptDefinition, ServiceDefinition, ServiceRole, ServiceStatus, ROLE_LABELS, ROLE_ORDER, TechDescription } from "./types";
 import { TerminalManager } from "./terminalManager";
 import { getServiceMeta, TECH_DESCRIPTIONS } from "./serviceMeta";
-import { addToDisable, editConfig } from "./configManager";
+import { addToDisable } from "./configManager";
 
 interface WebviewState {
   techs: string[];
@@ -81,11 +81,6 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
             if (root) { this.terminalManager.runOneShot(script, root); }
           }
-          break;
-        }
-        case "editConfig": {
-          const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-          if (root) { editConfig(root); }
           break;
         }
         case "hideService": {
