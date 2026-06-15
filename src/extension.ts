@@ -59,7 +59,9 @@ function scanAndRefresh(webviewProvider: DevStackWebviewProvider): void {
   const autoServices = deduplicateServices(stacks);
 
   const config = loadConfig(root);
-  const services = mergeServices(autoServices, config);
+  // systemd-managed services are driven by `devstack serve` (the web dashboard),
+  // not by the terminal lifecycle this extension owns — hide them here.
+  const services = mergeServices(autoServices, config).filter((s) => s.manager !== "systemd");
   const scripts = loadScripts(config);
 
   webviewProvider.setServices(services, techs, scripts);

@@ -28,6 +28,17 @@ export interface ServiceDefinition {
   port?: number;
   /** Override the full URL shown when the service is running */
   url?: string;
+  /**
+   * How the service is run. "process" (default) = a child process the dashboard
+   * spawns and owns. "systemd" = a systemd unit the dashboard drives via
+   * `systemctl`. The VS Code extension only knows the terminal lifecycle, so it
+   * ignores systemd services; they are web-dashboard-only.
+   */
+  manager?: "process" | "systemd";
+  /** systemd unit name (without ".service"), required when manager === "systemd" */
+  unit?: string;
+  /** Whether the systemd unit is a --user unit (default true). */
+  userScope?: boolean;
 }
 
 export interface DetectedStack {
