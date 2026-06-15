@@ -5,6 +5,18 @@ All notable changes to the DevStack VS Code extension are documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Web dashboard** (`devstack serve`) — a standalone full-screen mission-control served over localhost. Start/stop dev services (child processes, killed by process group so no orphaned watchers) and prod `systemd --user` services; per-service resolved venv/`.env`/inline-env/mode/health; cross-project port classification (managed/conflict/foreign/project); front→back→service wiring; and tiled live log panels with fade-on-update over SSE. See `docs/specs/2026-06-15-web-dashboard-design.md` and the API contract in `docs/dev/web-dashboard-ui-brief.md`.
+- **`manager: "systemd"`** service field (+ `unit`, `userScope`) so prod systemd units appear in the dashboard. The VS Code extension ignores them (no terminal lifecycle).
+- Node-watcher mode detection (`tsx watch`, `ts-node-dev`, `nodemon`, `node --watch`) in `serviceMeta`.
+
+### Changed
+
+- Config parsing/merging moved from `configManager.ts` to a vscode-free `core/config.ts` (re-exported), so the CLI can reuse it without the `vscode` module. New `core/wiring.ts` (pure, unit-tested).
+
 ## [0.4.0] — 2026-05-18
 
 ### Added

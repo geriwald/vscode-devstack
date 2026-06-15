@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is this
 
-VS Code extension that auto-detects a workspace's tech stack and exposes launchable dev services in the activity bar. No tests, no linter config — it's a single-developer v0.1.
+Two front-ends over one core:
+
+1. **VS Code extension** — auto-detects a workspace's tech stack and exposes launchable dev services in the activity bar (runs them in managed terminals).
+2. **Web dashboard** (`devstack serve`) — a standalone full-screen mission-control: start/stop dev *and* prod (systemd) services, see each service's resolved venv/.env, tiled live log panels, cross-project port classification, health checks, and front→back→service wiring. See `docs/specs/2026-06-15-web-dashboard-design.md`.
+
+The two share the config/model layer (`core/`, `serviceMeta.ts`, `stackDetector.ts`); they do NOT share the process lifecycle (extension = VS Code terminals; dashboard = child processes it owns + systemd).
 
 ## Build & install
 
@@ -23,6 +28,25 @@ No test runner is configured. No CI pipeline.
 ## Architecture
 
 Files in `src/` (TypeScript, compiled to `out/`) plus `media/` (webview assets, served as-is):
+
+### Shared core (vscode-free — usable from the CLI)
+
+- **core/config.ts** — `.devstack.json` parsing/merging (JSONC). Moved out of `configManager.ts` so the CLI can import it without pulling in the `vscode` module. `configManager.ts` re-exports these and keeps the vscode-only `editConfig`.
+- **core/wiring.ts** — pure parsers: a service command → its venv/interpreter, `--env-file`, inline `KEY=val` env, and `*_URL`/`*_PORT` references to other services. Unit-tested in `core/wiring.test.ts`.
+
+### Web dashboard backend (`src/server/`, vscode-free)
+
+- **server/procRunner.ts** — owns a dev service as a detached child (own process group), so stop kills the WHOLE tree (no orphaned `tsx watch`/`uvicorn --reload` worker).
+- **server/systemdRunner.ts** — drives prod `systemd --user` units (`systemctl` lifecycle, `journalctl -f` logs, `systemctl show` facts).
+- **server/inspector.ts** — `ss -tlnp` port scan + `/proc` owner resolution, port classification (managed/conflict/foreign/project), HTTP health probes.
+- **server/registry.ts** — owns all runners, assembles the snapshot (services + ports), runs scripts.
+- **server/logBus.ts** — line-splitting log fan-in/out with per-channel ring buffers + a monotonic `seq` for SSE replay/dedupe.
+- **server/httpServer.ts** — `createDashboardServer()` factory: static SPA + REST + SSE. Binds 127.0.0.1, rejects non-localhost Host headers (DNS-rebinding guard).
+- **server/fallbackPage.ts** — diagnostic page served when `media/dashboard/` has no SPA yet.
+- **cli.ts** — `devstack serve` entry (detect → merge config → serve).
+- **media/dashboard/** — the SPA (index.html, app.js, style.css), served as-is. API contract in `docs/dev/web-dashboard-ui-brief.md`.
+
+### VS Code extension
 
 - **extension.ts** — entry point. Wires WebviewView, commands, and a `FileSystemWatcher` that re-scans on marker file changes. The `scanAndRefresh` function is the main pipeline: detect → deduplicate → merge config → render.
 - **stackDetector.ts** — ordered array of `Detector` functions (framework-specific first, generic last). Each detector reads marker files synchronously. `deduplicateServices()` dedupes by command string, preferring framework detectors over generic ones (npm scripts, Makefile). Sets `tech` field on each service for metadata lookup.
@@ -63,6 +87,7 @@ Start/stop are handled via webview `postMessage`, not VS Code commands.
 
 ## Not in scope
 
-- Multi-project dashboard (explicitly rejected).
-- Dynamic port detection / healthcheck.
-- Multi-root workspace support.
+- **Multi-project dashboard** and **dynamic port detection / healthcheck** were rejected for the *extension*, but are now implemented in the **web dashboard** (`devstack serve`) — a deliberate reversal, see the 2026-06-15 spec.
+- Multi-root workspace support (extension).
+- Dashboard auth / remote exposure: it can spawn and kill processes, so it binds 127.0.0.1 only and rejects non-localhost Host headers. Never expose it.
+- Windows/macOS port scanning: the inspector uses `ss` + `/proc` (Linux-only).

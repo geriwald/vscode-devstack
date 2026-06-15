@@ -60,6 +60,56 @@ Services model long-running processes (dev servers, watchers) with a start/stop 
 
 Each entry under `scripts` accepts `name`, `command`, and optional `description` (one-line subtitle) and `cwd` (relative to the workspace root). Scripts are config-only — there is no auto-detection of `bin/` or `scripts/` entry points in this iteration.
 
+## Web dashboard (`devstack serve`)
+
+Beyond the VS Code sidebar, DevStack ships a standalone **web dashboard** for
+when you need the full picture at once — typically a multi-service project with
+a dev *and* a prod stack:
+
+```bash
+npm run serve -- --root /path/to/project --open   # or, once built: node out/cli.js serve -r . -o
+```
+
+It serves a localhost dashboard that:
+
+- **starts/stops services** — dev (child processes it owns) and prod
+  (`systemd --user` units, see below). Stopping a dev service kills the whole
+  process group, so `tsx watch` / `uvicorn --reload` never leave an orphan on the port.
+- shows each service's resolved **venv**, **`.env`/EnvironmentFile**, inline env
+  (so you see mock vs real at a glance), mode, port and **live health**.
+- **classifies every listening port** — *managed* (a service you run), *conflict*
+  (your port held by a foreign process), *foreign* (another project), *project*
+  (your repo, untracked) — so a squatted port is obvious.
+- shows the **wiring** — which frontend proxies to which backend, which backend
+  points at which service, and whether each target is up.
+- **tiles live log panels** so all running services are visible at once; a new
+  line flashes then fades so you see which panel moved.
+
+The dashboard binds `127.0.0.1` only and rejects non-localhost Host headers — it
+can start/kill processes, so never expose it. The port scan uses `ss` + `/proc`
+(Linux).
+
+### systemd (prod) services
+
+A service in `.devstack.json` may be a systemd unit:
+
+```json
+{
+  "name": "Backend (prod)",
+  "role": "backend",
+  "manager": "systemd",
+  "unit": "popic-backend",
+  "command": "systemctl --user start popic-backend",
+  "port": 3000,
+  "url": "http://127.0.0.1:3000/api/health"
+}
+```
+
+The dashboard drives it via `systemctl --user` and streams `journalctl --user -u
+<unit> -f`. The VS Code extension ignores `manager: "systemd"` services (they
+have no terminal lifecycle). `venv` and `.env` are never declared — they are
+derived from the live command / `systemctl show`.
+
 ## Build from source
 
 ```bash
