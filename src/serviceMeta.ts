@@ -34,6 +34,8 @@ const COMMAND_META: Array<{ match: RegExp; meta: ServiceMeta }> = [
   // Make
   { match: /make dev/, meta: { mode: "dev", hotReload: false, modeLabel: "dev" } },
   { match: /make run|make start|make serve/, meta: { mode: "run", hotReload: false, modeLabel: "run" } },
+  // Node watchers (tsx watch, ts-node-dev, nodemon, node --watch)
+  { match: /tsx watch|ts-node-dev|nodemon|node\b.*--watch/, meta: { mode: "dev", hotReload: true, modeLabel: "dev · watch" } },
   // npm generic
   { match: /npm run start$/, meta: { mode: "prod", hotReload: false, modeLabel: "prod" } },
   { match: /npm run serve/, meta: { mode: "dev", hotReload: false, modeLabel: "serve" } },

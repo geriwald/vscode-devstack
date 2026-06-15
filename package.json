@@ -66,10 +66,14 @@
       ]
     }
   },
+  "bin": {
+    "devstack": "out/cli.js"
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "serve": "npm run compile && node out/cli.js serve",
     "lint": "eslint src --ext ts",
     "test": "vitest run"
   },
