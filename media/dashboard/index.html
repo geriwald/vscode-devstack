@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DevStack</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">◆</span> DevStack <span class="project" id="project">—</span></div>
+    <div class="summary" id="summary"></div>
+    <div class="actions">
+      <button id="startAllDev" class="btn">▶ dev</button>
+      <button id="stopAll" class="btn">■ all</button>
+      <button id="toggleDeck" class="btn" title="Collapse the deck — logs fill the screen">▴ deck</button>
+    </div>
+  </header>
+
+  <section class="deck" id="deck">
+    <div class="deck-col deck-services">
+      <h2>Services</h2>
+      <div id="services" class="svc-grid"></div>
+    </div>
+    <div class="deck-col deck-ports">
+      <h2>Ports</h2>
+      <div id="ports" class="port-list"></div>
+    </div>
+    <div class="deck-col deck-wiring">
+      <h2>Wiring</h2>
+      <div id="wiring" class="wire-list"></div>
+    </div>
+  </section>
+
+  <main class="logs" id="logs">
+    <div class="empty" id="logsEmpty">No running service. Start one to see its logs here.</div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
