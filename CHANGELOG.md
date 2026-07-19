@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-19
+
 ### Added
 
 - **Web dashboard** (`devstack serve`) — a standalone full-screen mission-control served over localhost. Start/stop dev services (child processes, killed by process group so no orphaned watchers) and prod `systemd --user` services; per-service resolved venv/`.env`/inline-env/mode/health; cross-project port classification (managed/conflict/foreign/project); front→back→service wiring; and tiled live log panels with fade-on-update over SSE. See `docs/specs/2026-06-15-web-dashboard-design.md` and the API contract in `docs/dev/web-dashboard-ui-brief.md`.
@@ -16,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Config parsing/merging moved from `configManager.ts` to a vscode-free `core/config.ts` (re-exported), so the CLI can reuse it without the `vscode` module. New `core/wiring.ts` (pure, unit-tested).
+
+### Fixed
+
+- `.devstack.json` is now parsed as JSONC: comments and trailing commas are tolerated instead of silently wiping every configured service and script. Previously a single `//` comment made `JSON.parse` throw, the error was swallowed, and the sidebar fell back to auto-detection only (no configured buttons).
 
 ## [0.4.0] — 2026-05-18
 
