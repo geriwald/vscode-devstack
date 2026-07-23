@@ -9,6 +9,7 @@ interface WebviewState {
   servicesByRole: Record<string, Array<{
     name: string;
     command: string;
+    description?: string;
     cwd?: string;
     status: ServiceStatus;
     modeLabel?: string;
@@ -150,6 +151,7 @@ export class DevStackWebviewProvider implements vscode.WebviewViewProvider {
         return {
           name: s.name,
           command: s.command,
+          description: s.description,
           cwd: s.cwd,
           status,
           modeLabel: meta.modeLabel,

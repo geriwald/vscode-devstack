@@ -113,8 +113,12 @@ renders as:
 
 - **Name** (bold, like a service name).
 - **Description** (muted, one-line; omitted if absent).
-- **Command** (monospace, same style as the existing
-  `.service-command` block).
+- ~~**Command** (monospace, same style as the existing
+  `.service-command` block).~~ *Revised 2026-07-21: the command line is no
+  longer printed in the sidebar — for scripts and for services alike, the
+  subtitle is the `description` field and the command is only exposed as the
+  tooltip on the name. `.service-command` is gone; both use
+  `.service-description`.*
 - A single **Run** button (codicon: `play` or `terminal`). No status
   dot, no stop button, no URL block, no port badge.
 

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Web dashboard** (`devstack serve`) — a standalone full-screen mission-control served over localhost. Start/stop dev services (child processes, killed by process group so no orphaned watchers) and prod `systemd --user` services; per-service resolved venv/`.env`/inline-env/mode/health; cross-project port classification (managed/conflict/foreign/project); front→back→service wiring; and tiled live log panels with fade-on-update over SSE. See `docs/specs/2026-06-15-web-dashboard-design.md` and the API contract in `docs/dev/web-dashboard-ui-brief.md`.
 - **`manager: "systemd"`** service field (+ `unit`, `userScope`) so prod systemd units appear in the dashboard. The VS Code extension ignores them (no terminal lifecycle).
 - Node-watcher mode detection (`tsx watch`, `ts-node-dev`, `nodemon`, `node --watch`) in `serviceMeta`.
+- `description` field on services in `.devstack.json`: the sidebar shows it as the subtitle under the name; the raw command is no longer printed, only exposed as a tooltip on the service name (services and scripts alike).
 
 ### Changed
 

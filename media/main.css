@@ -230,9 +230,10 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-.service-command {
-  font-family: var(--vscode-editor-font-family);
-  font-size: 0.95em;
+.service-description {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  margin-bottom: 2px;
 }
 
 .service-badges {
@@ -287,12 +288,6 @@ body {
   flex-shrink: 0;
   font-size: 14px;
   color: var(--vscode-descriptionForeground);
-}
-
-.script-description {
-  color: var(--vscode-descriptionForeground);
-  font-style: italic;
-  margin-bottom: 2px;
 }
 
 .script-run {

@@ -3,6 +3,7 @@
     {
       "name": "Reload Extension",
       "role": "infra",
+      "description": "Compile, package the .vsix and reinstall it in VS Code",
       "command": "npm run compile && rm -f devstack-*.vsix && npx @vscode/vsce package --allow-missing-repository && code --install-extension devstack-*.vsix --force"
     }
   ],

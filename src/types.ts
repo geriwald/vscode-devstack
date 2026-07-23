@@ -16,6 +16,8 @@ export interface ServiceDefinition {
   role: ServiceRole;
   /** Shell command to start the service */
   command: string;
+  /** Optional one-line subtitle shown under the name, in place of the command */
+  description?: string;
   /** Working directory (relative to workspace root) */
   cwd?: string;
   /** How the service was discovered */

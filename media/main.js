@@ -76,7 +76,7 @@
         html += '<div class="service-item">';
         html += '  <div class="service-row">';
         html += '    <span class="service-status ' + statusClass + '">' + statusIcon + '</span>';
-        html += '    <span class="service-name">' + escapeHtml(svc.name) + '</span>';
+        html += '    <span class="service-name" title="' + escapeHtml(svc.command) + '">' + escapeHtml(svc.name) + '</span>';
         if (isConfig) {
           html += '    <span class="source-badge" title="Defined in .devstack.json">config</span>';
         }
@@ -90,7 +90,9 @@
         html += '    <button class="service-action" data-action="' + actionCmd + '" data-name="' + escapeHtml(svc.name) + '" data-role="' + svc.role + '" title="' + actionTitle + '">' + actionIcon + '</button>';
         html += '  </div>';
         html += '  <div class="service-details">';
-        html += '    <div class="service-command">' + escapeHtml(svc.command) + '</div>';
+        if (svc.description) {
+          html += '    <div class="service-description">' + escapeHtml(svc.description) + '</div>';
+        }
 
         // Badges
         const badges = [];
@@ -144,14 +146,13 @@
         html += '<div class="service-item script-item">';
         html += '  <div class="service-row">';
         html += '    <span class="script-icon codicon codicon-terminal"></span>';
-        html += '    <span class="service-name">' + escapeHtml(script.name) + '</span>';
+        html += '    <span class="service-name" title="' + escapeHtml(script.command) + '">' + escapeHtml(script.name) + '</span>';
         html += '    <button class="service-action script-run" data-action="runScript" data-name="' + escapeHtml(script.name) + '" title="Run">&#x25B6;</button>';
         html += '  </div>';
         html += '  <div class="service-details">';
         if (script.description) {
-          html += '    <div class="script-description">' + escapeHtml(script.description) + '</div>';
+          html += '    <div class="service-description">' + escapeHtml(script.description) + '</div>';
         }
-        html += '    <div class="service-command">' + escapeHtml(script.command) + '</div>';
         html += '  </div>';
         html += '</div>';
       }
@@ -227,6 +228,8 @@
   function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML;
+    // textContent/innerHTML escapes &, <, > but not quotes; needed because
+    // escaped values are also injected into title="..." attributes
+    return div.innerHTML.replace(/"/g, "&quot;");
   }
 })();
